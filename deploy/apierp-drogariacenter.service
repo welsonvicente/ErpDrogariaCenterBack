@@ -1,0 +1,14 @@
+[Unit]
+Description=API ERP Drogaria Center (backend)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/apierp-drogariacenter
+ExecStart=/usr/bin/node dist/server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
