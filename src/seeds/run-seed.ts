@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import bcrypt from 'bcryptjs';
 import { AppDataSource } from '../config/data-source';
+import { CATEGORIAS_PADRAO } from '../constants/categoriasPadrao';
 import { logger } from '../config/logger';
 import { Categoria } from '../models/Categoria';
 import { Organizacao } from '../models/Organizacao';
@@ -19,23 +20,6 @@ const ORGANIZACAO_PADRAO = {
   nome: 'Drogaria Center',
   slug: 'drogariacenter',
 };
-
-const CATEGORIAS_PADRAO = [
-  { nome: 'Combustível', icone: '⛽' },
-  { nome: 'Manutenção da moto', icone: '🔧' },
-  { nome: 'Óleo da moto', icone: '🛢️' },
-  { nome: 'Material de limpeza', icone: '🧹' },
-  { nome: 'Cabine de aplicação', icone: '🧴' },
-  { nome: 'Uso e consumo e faxina', icone: '🧼' },
-  { nome: 'Consumo interno - material de escritório', icone: '📎' },
-  { nome: 'Uniformes', icone: '👕' },
-  { nome: 'Embalagens e impressos', icone: '📦' },
-  { nome: 'Produto avulso e valor', icone: '🏷️' },
-  { nome: 'Entregador terceirizado', icone: '🛵' },
-  { nome: 'Diária de domingo ou feriado', icone: '📅' },
-  { nome: 'Retirada de vitaminas ou produtos de campanha', icone: '💊' },
-  { nome: 'Outros', icone: '✳️' },
-];
 
 const ADMIN_PADRAO = {
   nome: 'Administrador Drogaria Center',
