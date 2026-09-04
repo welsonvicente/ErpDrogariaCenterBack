@@ -32,6 +32,18 @@ export const env = {
   },
 
   logLevel: process.env.LOG_LEVEL ?? 'info',
+
+  /**
+   * Origens do front autorizadas a chamar a API (CORS). Lista separada por
+   * vírgula em CORS_ORIGINS; sem essa variável, cai nos endereços de
+   * desenvolvimento local (localhost e rede local na porta padrão do Vite).
+   */
+  corsOrigins: (
+    process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
 };
 
 export const isProduction = env.nodeEnv === 'production';

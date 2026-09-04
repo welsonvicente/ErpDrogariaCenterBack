@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import cors from 'cors';
 import express from 'express';
+import { env } from './config/env';
+import { logger } from './config/logger';
 import { errorHandler } from './middlewares/errorHandler';
 import { requestLogger } from './middlewares/requestLogger';
 import routes from './routes';
@@ -13,7 +15,19 @@ import routes from './routes';
 export function createApp() {
   const app = express();
 
-  app.use(cors());
+  app.use(
+    cors({
+      origin(origin, callback) {
+        // Sem "origin" = requisição sem navegador (curl, health check, etc.) — sempre permitida.
+        if (!origin || env.corsOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+        logger.warn('Origem bloqueada pelo CORS', { origin, permitidas: env.corsOrigins });
+        callback(new Error('Origem não autorizada pelo CORS.'));
+      },
+    }),
+  );
   app.use(express.json());
   app.use(requestLogger);
 
