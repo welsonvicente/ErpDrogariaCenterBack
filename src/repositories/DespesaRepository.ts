@@ -62,6 +62,16 @@ export class DespesaRepository {
     return this.repo.findOne({ where: { id, organizacaoId } });
   }
 
+  /** Usado para impedir a exclusão definitiva de uma categoria que já tem despesas lançadas. */
+  static countByCategoria(categoriaId: string) {
+    return this.repo.count({ where: { categoriaId } });
+  }
+
+  /** Usado para impedir a exclusão definitiva de um funcionário que já tem despesas lançadas. */
+  static countByUsuario(usuarioId: string) {
+    return this.repo.count({ where: { usuarioId } });
+  }
+
   static create(data: Partial<Despesa>) {
     const despesa = this.repo.create(data);
     return this.repo.save(despesa);

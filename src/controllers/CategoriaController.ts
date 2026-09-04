@@ -31,4 +31,14 @@ export class CategoriaController {
     await CategoriaService.deactivate(req.usuario!.organizacaoId, req.params.id);
     res.status(204).send();
   }
+
+  static async activate(req: AuthenticatedRequest, res: Response) {
+    const categoria = await CategoriaService.activate(req.usuario!.organizacaoId, req.params.id);
+    res.status(200).json(categoria);
+  }
+
+  static async remove(req: AuthenticatedRequest, res: Response) {
+    await CategoriaService.remove(req.usuario!.organizacaoId, req.params.id);
+    res.status(204).send();
+  }
 }

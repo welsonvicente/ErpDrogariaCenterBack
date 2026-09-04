@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { logger } from '../config/logger';
 import { AtualizarFuncionarioDTO, CriarFuncionarioDTO } from '../dtos/usuario.dto';
 import { PerfilUsuario, Usuario } from '../models/Usuario';
+import { DespesaRepository } from '../repositories/DespesaRepository';
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
 import { AppError } from '../utils/AppError';
 
@@ -80,5 +81,26 @@ export class UsuarioService {
     const atualizado = await UsuarioRepository.update(id, { ativo: false });
     logger.info('Funcionário inativado', { usuarioId: id, organizacaoId });
     return sanitize(atualizado!);
+  }
+
+  static async activate(organizacaoId: string, id: string) {
+    await this.findOrFail(organizacaoId, id);
+    const atualizado = await UsuarioRepository.update(id, { ativo: true });
+    logger.info('Funcionário ativado', { usuarioId: id, organizacaoId });
+    return sanitize(atualizado!);
+  }
+
+  static async remove(organizacaoId: string, id: string) {
+    await this.findOrFail(organizacaoId, id);
+
+    const totalDespesas = await DespesaRepository.countByUsuario(id);
+    if (totalDespesas > 0) {
+      throw AppError.conflict(
+        'Não é possível excluir: já existem despesas lançadas por este funcionário. Inative o funcionário em vez de excluí-lo.',
+      );
+    }
+
+    await UsuarioRepository.remove(id);
+    logger.info('Funcionário excluído', { usuarioId: id, organizacaoId });
   }
 }

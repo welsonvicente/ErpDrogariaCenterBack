@@ -32,4 +32,14 @@ export class UsuarioController {
     await UsuarioService.deactivate(req.usuario!.organizacaoId, req.params.id);
     res.status(204).send();
   }
+
+  static async activate(req: AuthenticatedRequest, res: Response) {
+    const funcionario = await UsuarioService.activate(req.usuario!.organizacaoId, req.params.id);
+    res.status(200).json(funcionario);
+  }
+
+  static async remove(req: AuthenticatedRequest, res: Response) {
+    await UsuarioService.remove(req.usuario!.organizacaoId, req.params.id);
+    res.status(204).send();
+  }
 }

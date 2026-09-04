@@ -12,6 +12,8 @@ router.get('/', asyncHandler(UsuarioController.list));
 router.get('/:id', asyncHandler(UsuarioController.getById));
 router.post('/', asyncHandler(UsuarioController.create));
 router.put('/:id', asyncHandler(UsuarioController.update));
+router.patch('/:id/ativar', asyncHandler(UsuarioController.activate));
+router.delete('/:id/permanente', asyncHandler(UsuarioController.remove));
 router.delete('/:id', asyncHandler(UsuarioController.deactivate));
 
 export default router;

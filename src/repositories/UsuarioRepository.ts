@@ -57,4 +57,8 @@ export class UsuarioRepository {
     await this.repo.update(id, data);
     return this.findById(id);
   }
+
+  static remove(id: string) {
+    return this.repo.delete(id);
+  }
 }

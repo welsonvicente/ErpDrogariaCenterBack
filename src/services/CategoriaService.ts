@@ -1,6 +1,7 @@
 import { logger } from '../config/logger';
 import { AtualizarCategoriaDTO, CriarCategoriaDTO } from '../dtos/categoria.dto';
 import { CategoriaRepository } from '../repositories/CategoriaRepository';
+import { DespesaRepository } from '../repositories/DespesaRepository';
 import { AppError } from '../utils/AppError';
 
 export class CategoriaService {
@@ -45,5 +46,26 @@ export class CategoriaService {
     const atualizada = await CategoriaRepository.update(id, { ativo: false });
     logger.info('Categoria inativada', { categoriaId: id, organizacaoId });
     return atualizada;
+  }
+
+  static async activate(organizacaoId: string, id: string) {
+    await this.getById(organizacaoId, id);
+    const atualizada = await CategoriaRepository.update(id, { ativo: true });
+    logger.info('Categoria ativada', { categoriaId: id, organizacaoId });
+    return atualizada;
+  }
+
+  static async remove(organizacaoId: string, id: string) {
+    await this.getById(organizacaoId, id);
+
+    const totalDespesas = await DespesaRepository.countByCategoria(id);
+    if (totalDespesas > 0) {
+      throw AppError.conflict(
+        'Não é possível excluir: já existem despesas lançadas nesta categoria. Inative a categoria em vez de excluí-la.',
+      );
+    }
+
+    await CategoriaRepository.remove(id);
+    logger.info('Categoria excluída', { categoriaId: id, organizacaoId });
   }
 }
