@@ -10,6 +10,13 @@ export class DespesaController {
     res.status(200).json(result);
   }
 
+  /** "Meus lançamentos": o funcionário vê só as próprias despesas, nunca as de outros. */
+  static async listMinhas(req: AuthenticatedRequest, res: Response) {
+    const query = listarDespesasQuerySchema.parse(req.query);
+    const result = await DespesaService.listMinhas(req.usuario!.organizacaoId, req.usuario!.id, query);
+    res.status(200).json(result);
+  }
+
   static async summary(req: AuthenticatedRequest, res: Response) {
     const query = listarDespesasQuerySchema.partial().parse(req.query);
     const result = await DespesaService.summary(req.usuario!.organizacaoId, query);

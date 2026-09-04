@@ -35,6 +35,24 @@ export class DespesaService {
     return { ...pagina, items: pagina.items.map(sanitizeDespesa), valorTotal: total };
   }
 
+  /**
+   * Lançamentos do próprio usuário logado ("meus lançamentos" do funcionário).
+   * `usuarioId` é forçado ao dono da sessão — nunca aceito da query, senão um
+   * funcionário poderia ver os lançamentos de outro só trocando o parâmetro.
+   */
+  static async listMinhas(organizacaoId: string, usuarioId: string, query: ListarDespesasQueryDTO) {
+    const filtros: FiltrosDespesa = {
+      organizacaoId,
+      usuarioId,
+      dataInicio: query.dataInicio,
+      dataFim: query.dataFim,
+      categoriaId: query.categoriaId,
+    };
+
+    const pagina = await DespesaRepository.findPaginated(filtros, query.page, query.pageSize);
+    return { ...pagina, items: pagina.items.map(sanitizeDespesa) };
+  }
+
   private static async findOrFail(organizacaoId: string, id: string) {
     const despesa = await DespesaRepository.findById(organizacaoId, id);
     if (!despesa) throw AppError.notFound('Despesa', id);
@@ -54,6 +72,7 @@ export class DespesaService {
       organizacaoId,
       data: data.data,
       valor: data.valor.toFixed(2),
+      formaPagamento: data.formaPagamento,
       descricao: data.descricao ?? null,
       usuarioId,
       categoriaId: data.categoriaId,
@@ -87,6 +106,16 @@ export class DespesaService {
     await this.findOrFail(organizacaoId, id);
     await DespesaRepository.remove(id);
     logger.info('Despesa removida', { despesaId: id, organizacaoId });
+  }
+
+  /** Todas as despesas que batem com o filtro (sem paginação) — usado na exportação Excel/PDF. */
+  static async listParaExportacao(
+    organizacaoId: string,
+    query: Pick<ListarDespesasQueryDTO, 'dataInicio' | 'dataFim' | 'usuarioId' | 'categoriaId'>,
+  ) {
+    const filtros: FiltrosDespesa = { organizacaoId, ...query };
+    const despesas = await DespesaRepository.findAll(filtros);
+    return despesas.map(sanitizeDespesa);
   }
 
   /** Estatísticas para os cards/tabela do dashboard do gestor. */

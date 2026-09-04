@@ -49,6 +49,15 @@ export class DespesaRepository {
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
+  /** Todas as despesas que batem com o filtro, sem paginação — usado na exportação (Excel/PDF). */
+  static findAll(filtros: FiltrosDespesa) {
+    return this.baseQuery(filtros)
+      .orderBy('despesa.data', 'DESC')
+      .addOrderBy('despesa.criadoEm', 'DESC')
+      .take(10000)
+      .getMany();
+  }
+
   static findById(organizacaoId: string, id: string) {
     return this.repo.findOne({ where: { id, organizacaoId } });
   }

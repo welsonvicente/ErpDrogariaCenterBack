@@ -11,6 +11,15 @@ import { Categoria } from './Categoria';
 import { Organizacao } from './Organizacao';
 import { Usuario } from './Usuario';
 
+export enum FormaPagamento {
+  DINHEIRO = 'DINHEIRO',
+  CARTAO_DEBITO = 'CARTAO_DEBITO',
+  CARTAO_CREDITO = 'CARTAO_CREDITO',
+  PIX = 'PIX',
+  BOLETO = 'BOLETO',
+  OUTRO = 'OUTRO',
+}
+
 /** Lançamento de despesa feito por um usuário (perfil FUNCIONARIO, em geral). */
 @Entity('despesas')
 export class Despesa {
@@ -30,6 +39,9 @@ export class Despesa {
 
   @Column({ type: 'numeric', precision: 12, scale: 2 })
   valor!: string;
+
+  @Column({ type: 'enum', enum: FormaPagamento, name: 'forma_pagamento', default: FormaPagamento.DINHEIRO })
+  formaPagamento!: FormaPagamento;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
   descricao!: string | null;

@@ -1,9 +1,11 @@
 import { z } from 'zod';
+import { FormaPagamento } from '../models/Despesa';
 
 /** usuarioId NÃO vem no corpo: é sempre derivado do token de quem está autenticado (evita lançar despesa em nome de outro usuário). */
 export const criarDespesaSchema = z.object({
   data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato AAAA-MM-DD.'),
   valor: z.number().positive('Valor deve ser maior que zero.'),
+  formaPagamento: z.nativeEnum(FormaPagamento, { errorMap: () => ({ message: 'Forma de pagamento inválida.' }) }),
   descricao: z.string().trim().max(500).optional().nullable(),
   categoriaId: z.string().uuid('categoriaId inválido.'),
 });
