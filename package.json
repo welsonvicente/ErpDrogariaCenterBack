@@ -1,7 +1,7 @@
 {
-  "name": "drogaria-center-erp-backend",
+  "name": "pharmamind-backend",
   "version": "0.1.0",
-  "description": "Backend do ERP Drogaria Center (API REST em camadas: Controller -> Service -> Repository -> Model)",
+  "description": "Backend do PharmaMind (API REST em camadas: Controller -> Service -> Repository -> Model)",
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/server.ts",

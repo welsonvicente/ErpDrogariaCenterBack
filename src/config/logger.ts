@@ -40,7 +40,7 @@ const fileFormat = winston.format.combine(baseFormat, winston.format.json());
 export const logger = winston.createLogger({
   level: env.logLevel,
   format: fileFormat,
-  defaultMeta: { service: 'drogaria-center-erp-backend' },
+  defaultMeta: { service: 'pharmamind-backend' },
   transports: [
     new DailyRotateFile({
       dirname: logsDir,

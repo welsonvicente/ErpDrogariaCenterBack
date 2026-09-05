@@ -1,4 +1,4 @@
-name: Deploy para VPS ERP Drogaria Center
+name: Deploy para VPS PharmaMind
 
 on:
   push:
@@ -25,10 +25,10 @@ jobs:
         run: npm run build
 
       - name: Empacotar artefato de deploy
-        run: tar czf apierp-drogariacenter.tar.gz dist package.json package-lock.json
+        run: tar czf pharmamind-api.tar.gz dist package.json package-lock.json
 
       - name: Listar conteúdo do pacote (debug)
-        run: tar tzf apierp-drogariacenter.tar.gz
+        run: tar tzf pharmamind-api.tar.gz
 
       - name: Instalar sshpass
         run: sudo apt-get update && sudo apt-get install -y sshpass
@@ -37,18 +37,18 @@ jobs:
         env:
           SSH_PASS: ${{ secrets.VPS_PASSWORD }}
         run: |
-          sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no root@103.199.184.22 "mkdir -p /var/www/apierp-drogariacenter"
+          sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no root@103.199.184.22 "mkdir -p /var/www/pharmamind-api"
           sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no root@103.199.184.22 '
-            if [ -d /var/www/apierp-drogariacenter/dist ]; then
-              mv /var/www/apierp-drogariacenter/dist /var/www/apierp-drogariacenter/dist-$(date +%Y%m%d%H%M%S).bak
+            if [ -d /var/www/pharmamind-api/dist ]; then
+              mv /var/www/pharmamind-api/dist /var/www/pharmamind-api/dist-$(date +%Y%m%d%H%M%S).bak
             fi
           '
-          sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no apierp-drogariacenter.tar.gz root@103.199.184.22:/var/www/apierp-drogariacenter/apierp-drogariacenter.tar.gz
+          sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no pharmamind-api.tar.gz root@103.199.184.22:/var/www/pharmamind-api/pharmamind-api.tar.gz
           sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no root@103.199.184.22 "
-            cd /var/www/apierp-drogariacenter &&
-            tar xzf apierp-drogariacenter.tar.gz &&
-            rm apierp-drogariacenter.tar.gz &&
+            cd /var/www/pharmamind-api &&
+            tar xzf pharmamind-api.tar.gz &&
+            rm pharmamind-api.tar.gz &&
             npm ci --omit=dev &&
             node -r reflect-metadata ./node_modules/typeorm/cli.js migration:run -d dist/config/data-source.js &&
-            systemctl restart apierp-drogariacenter && systemctl status apierp-drogariacenter --no-pager || true
+            systemctl restart pharmamind-api && systemctl status pharmamind-api --no-pager || true
           "

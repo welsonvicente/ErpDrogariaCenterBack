@@ -1,10 +1,10 @@
 [Unit]
-Description=API ERP Drogaria Center (backend)
+Description=API PharmaMind (backend)
 After=network.target postgresql.service
 
 [Service]
 Type=simple
-WorkingDirectory=/var/www/apierp-drogariacenter
+WorkingDirectory=/var/www/pharmamind-api
 ExecStart=/usr/bin/node dist/server.js
 Restart=on-failure
 RestartSec=5

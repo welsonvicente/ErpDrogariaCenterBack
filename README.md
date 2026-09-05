@@ -1,6 +1,6 @@
-# ErpDrogariaCenterBack
+# PharmaMind — Backend
 
-Backend do ERP Drogaria Center — Node + Express + TypeScript + TypeORM + PostgreSQL.
+Backend do PharmaMind — Node + Express + TypeScript + TypeORM + PostgreSQL.
 
 Arquitetura em camadas: Controller → Service → Repository → Model, com logging estruturado (Winston) e multi-tenant (cada empresa é uma `Organizacao`).
 
