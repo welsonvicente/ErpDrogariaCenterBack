@@ -34,6 +34,14 @@ export const env = {
   logLevel: process.env.LOG_LEVEL ?? 'info',
 
   /**
+   * Opcional — só é preciso pra "buscar imagem automaticamente" na
+   * ferramenta de Cartazes. Sem essa chave, a busca automática simplesmente
+   * fica indisponível (usuário cai no fluxo manual de enviar foto), o resto
+   * do sistema funciona normalmente.
+   */
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
+
+  /**
    * Origens do front autorizadas a chamar a API (CORS). Lista separada por
    * vírgula em CORS_ORIGINS; sem essa variável, cai nos endereços de
    * desenvolvimento local (localhost e rede local na porta padrão do Vite).
