@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { env, isProduction } from './env';
+import { ArmazenamentoApp } from '../models/ArmazenamentoApp';
 import { Categoria } from '../models/Categoria';
 import { Despesa } from '../models/Despesa';
 import { Organizacao } from '../models/Organizacao';
@@ -23,6 +24,6 @@ export const AppDataSource = new DataSource({
   database: env.db.database,
   synchronize: false,
   logging: isProduction ? ['error', 'warn'] : ['error', 'warn', 'schema'],
-  entities: [Organizacao, Usuario, Categoria, Despesa],
+  entities: [Organizacao, Usuario, Categoria, Despesa, ArmazenamentoApp],
   migrations: [__dirname + '/../migrations/*.{ts,js}'],
 });

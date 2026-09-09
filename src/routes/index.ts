@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import armazenamentoAppRoutes from './armazenamentoApp.routes';
 import authRoutes from './auth.routes';
 import cartazRoutes from './cartaz.routes';
 import categoriaRoutes from './categoria.routes';
@@ -20,5 +21,6 @@ router.use('/despesas', despesaRoutes);
 router.use('/perfil', perfilRoutes);
 router.use('/organizacao', organizacaoRoutes);
 router.use('/cartazes', cartazRoutes);
+router.use('/armazenamento', armazenamentoAppRoutes);
 
 export default router;
