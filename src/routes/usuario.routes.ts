@@ -5,6 +5,11 @@ import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
 
+// Lista enxuta aberta a qualquer autenticado (funcionário escolhe um colega
+// num seletor, ex.: "quem recebeu a diária") — precisa vir antes do
+// `router.use` abaixo, que restringe todo o resto a ADMIN/GESTOR.
+router.get('/colegas', authenticate, asyncHandler(UsuarioController.listColegas));
+
 // Gestão de funcionários é restrita a ADMIN/GESTOR.
 router.use(authenticate, requireGestor);
 

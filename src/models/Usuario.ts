@@ -70,6 +70,14 @@ export class Usuario {
   @Column({ default: true })
   ativo!: boolean;
 
+  /**
+   * Concedido por um gestor a um FUNCIONARIO específico (ver UsuarioService.update) —
+   * faz aparecer, no painel dele, um atalho para a tela de login do gestor. Não dá
+   * acesso nenhum por si só: o login de gestor continua exigindo e-mail/senha próprios.
+   */
+  @Column({ name: 'pode_acessar_gestor', default: false })
+  podeAcessarGestor!: boolean;
+
   @OneToMany(() => Despesa, (despesa) => despesa.usuario)
   despesas!: Despesa[];
 

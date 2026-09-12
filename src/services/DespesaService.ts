@@ -3,19 +3,47 @@ import { AtualizarDespesaDTO, CriarDespesaDTO, ListarDespesasQueryDTO } from '..
 import { Despesa } from '../models/Despesa';
 import { CategoriaRepository } from '../repositories/CategoriaRepository';
 import { DespesaRepository, FiltrosDespesa } from '../repositories/DespesaRepository';
+import { UsuarioRepository } from '../repositories/UsuarioRepository';
 import { AppError } from '../utils/AppError';
 
-/** O relacionamento `usuario` é eager e traz pinHash/senhaHash — nunca deixar isso vazar pela API. */
+/** Nome exato da categoria que exige escolher quem recebe o valor (ver `assertBeneficiario`). */
+const CATEGORIA_DIARIA_NOME = 'Diária de domingo ou feriado';
+
+/** Remove os hashes sensíveis de um Usuario antes de expô-lo pela API. */
+function sanitizeUsuario(usuario: Despesa['usuario']) {
+  const { pinHash, senhaHash, ...publico } = usuario;
+  return publico;
+}
+
+/** Os relacionamentos `usuario`/`beneficiario` são eager e trazem pinHash/senhaHash — nunca deixar isso vazar pela API. */
 function sanitizeDespesa(despesa: Despesa) {
-  const { pinHash, senhaHash, ...usuarioPublico } = despesa.usuario;
-  return { ...despesa, usuario: usuarioPublico };
+  return {
+    ...despesa,
+    usuario: sanitizeUsuario(despesa.usuario),
+    beneficiario: despesa.beneficiario ? sanitizeUsuario(despesa.beneficiario) : null,
+  };
 }
 
 export class DespesaService {
   private static async assertCategoriaExiste(organizacaoId: string, categoriaId?: string) {
-    if (!categoriaId) return;
+    if (!categoriaId) return null;
     const categoria = await CategoriaRepository.findById(organizacaoId, categoriaId);
     if (!categoria) throw AppError.notFound('Categoria', categoriaId);
+    return categoria;
+  }
+
+  /** A categoria "Diária de domingo ou feriado" precisa dizer quem recebeu o dinheiro. */
+  private static async assertBeneficiario(
+    organizacaoId: string,
+    categoriaNome: string | undefined,
+    beneficiarioId: string | null | undefined,
+  ) {
+    if (categoriaNome === CATEGORIA_DIARIA_NOME && !beneficiarioId) {
+      throw new AppError('Selecione o colaborador que vai receber a diária.', 400);
+    }
+    if (!beneficiarioId) return;
+    const beneficiario = await UsuarioRepository.findByIdInOrganizacao(organizacaoId, beneficiarioId);
+    if (!beneficiario) throw AppError.notFound('Colaborador', beneficiarioId);
   }
 
   static async list(organizacaoId: string, query: ListarDespesasQueryDTO) {
@@ -66,7 +94,8 @@ export class DespesaService {
 
   /** `usuarioId` vem de quem está autenticado (não do corpo da requisição) — ver despesa.dto.ts. */
   static async create(organizacaoId: string, usuarioId: string, data: CriarDespesaDTO) {
-    await this.assertCategoriaExiste(organizacaoId, data.categoriaId);
+    const categoria = await this.assertCategoriaExiste(organizacaoId, data.categoriaId);
+    await this.assertBeneficiario(organizacaoId, categoria?.nome, data.beneficiarioId);
 
     const despesa = await DespesaRepository.create({
       organizacaoId,
@@ -76,6 +105,7 @@ export class DespesaService {
       descricao: data.descricao ?? null,
       usuarioId,
       categoriaId: data.categoriaId,
+      beneficiarioId: data.beneficiarioId ?? null,
     });
 
     logger.info('Despesa lançada', {

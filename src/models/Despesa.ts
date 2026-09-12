@@ -60,6 +60,20 @@ export class Despesa {
   @Column({ name: 'categoria_id' })
   categoriaId!: string;
 
+  /**
+   * Colaborador que recebe o valor lançado — usado hoje pela categoria
+   * "Diária de domingo ou feriado" (quem lançou o gasto não é necessariamente
+   * quem recebeu a diária). Nulo para as demais categorias. `SET NULL` em vez
+   * de `RESTRICT` porque essa é só uma informação complementar da despesa,
+   * não o dono do lançamento — remover o funcionário não deveria travar nada.
+   */
+  @ManyToOne(() => Usuario, { eager: true, onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'beneficiario_id' })
+  beneficiario!: Usuario | null;
+
+  @Column({ name: 'beneficiario_id', nullable: true })
+  beneficiarioId!: string | null;
+
   @CreateDateColumn({ name: 'criado_em' })
   criadoEm!: Date;
 

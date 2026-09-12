@@ -28,6 +28,18 @@ export class UsuarioService {
     return funcionarios.map(sanitize);
   }
 
+  /**
+   * Versão enxuta da lista de funcionários (só o essencial pra exibir num
+   * seletor), aberta a qualquer usuário autenticado da organização — usada
+   * pelo funcionário pra escolher "quem vai receber a diária" ao lançar um
+   * gasto na categoria "Diária de domingo ou feriado". Diferente de `list`,
+   * que traz o cadastro completo e é restrito ao gestor.
+   */
+  static async listColegas(organizacaoId: string) {
+    const funcionarios = await UsuarioRepository.findFuncionarios(organizacaoId, false);
+    return funcionarios.map((f) => ({ id: f.id, nome: f.nome, icone: f.icone }));
+  }
+
   static async getById(organizacaoId: string, id: string) {
     const usuario = await this.findOrFail(organizacaoId, id);
     return sanitize(usuario);

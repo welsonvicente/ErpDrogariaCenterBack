@@ -11,6 +11,12 @@ export class UsuarioController {
     res.status(200).json(funcionarios);
   }
 
+  /** Lista enxuta (id/nome/ícone), aberta a qualquer autenticado — ver rota /colegas e UsuarioService.listColegas. */
+  static async listColegas(req: AuthenticatedRequest, res: Response) {
+    const colegas = await UsuarioService.listColegas(req.usuario!.organizacaoId);
+    res.status(200).json(colegas);
+  }
+
   static async getById(req: AuthenticatedRequest, res: Response) {
     const funcionario = await UsuarioService.getById(req.usuario!.organizacaoId, req.params.id);
     res.status(200).json(funcionario);

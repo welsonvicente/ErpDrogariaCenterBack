@@ -15,5 +15,7 @@ export const atualizarFuncionarioSchema = z.object({
   pin: z.string().trim().regex(/^\d+$/, 'PIN deve conter apenas números.').min(4).max(8).optional(),
   icone: z.string().trim().min(1).max(8).optional(),
   ativo: z.boolean().optional(),
+  /** Concede/revoga o atalho pro login de gestor no painel desse funcionário — ver Usuario.podeAcessarGestor. */
+  podeAcessarGestor: z.boolean().optional(),
 });
 export type AtualizarFuncionarioDTO = z.infer<typeof atualizarFuncionarioSchema>;

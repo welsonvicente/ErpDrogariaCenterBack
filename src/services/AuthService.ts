@@ -95,7 +95,13 @@ export class AuthService {
 
     return {
       token,
-      usuario: { id: usuario.id, nome: usuario.nome, icone: usuario.icone, perfil: usuario.perfil },
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        icone: usuario.icone,
+        perfil: usuario.perfil,
+        podeAcessarGestor: usuario.podeAcessarGestor,
+      },
     };
   }
 }

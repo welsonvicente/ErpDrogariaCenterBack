@@ -20,6 +20,7 @@ export class DespesaRepository {
       .createQueryBuilder('despesa')
       .leftJoinAndSelect('despesa.usuario', 'usuario')
       .leftJoinAndSelect('despesa.categoria', 'categoria')
+      .leftJoinAndSelect('despesa.beneficiario', 'beneficiario')
       .where('despesa.organizacao_id = :organizacaoId', { organizacaoId: filtros.organizacaoId });
 
     if (filtros.dataInicio) {
