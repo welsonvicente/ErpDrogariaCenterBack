@@ -8,9 +8,15 @@ export const chaveArmazenamentoSchema = z
   .max(120)
   .regex(/^[a-z0-9-]+$/, 'Chave deve conter só letras minúsculas, números e hífen.');
 
-/** Corpo de `PUT /armazenamento/:chave` — o valor é sempre uma string opaca (normalmente um JSON serializado pela própria ferramenta). */
+/**
+ * Corpo de `PUT /armazenamento/:chave` — o valor é sempre uma string opaca
+ * (normalmente um JSON serializado pela própria ferramenta). `versaoEsperada`
+ * é opcional (compatibilidade com quem ainda não manda) — quando presente,
+ * ativa o controle de concorrência otimista (ver ArmazenamentoAppService).
+ */
 export const salvarArmazenamentoSchema = z.object({
   valor: z.string(),
+  versaoEsperada: z.number().int().min(0).optional(),
 });
 export type SalvarArmazenamentoDTO = z.infer<typeof salvarArmazenamentoSchema>;
 
