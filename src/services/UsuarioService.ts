@@ -5,6 +5,7 @@ import { PerfilUsuario, Usuario } from '../models/Usuario';
 import { DespesaRepository } from '../repositories/DespesaRepository';
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
 import { AppError } from '../utils/AppError';
+import { AuditoriaService } from './AuditoriaService';
 
 const SALT_ROUNDS = 10;
 
@@ -66,12 +67,13 @@ export class UsuarioService {
     return sanitize(usuario);
   }
 
-  static async update(organizacaoId: string, id: string, data: AtualizarFuncionarioDTO) {
-    await this.findOrFail(organizacaoId, id);
+  /** `autorId` é quem está autenticado fazendo a alteração — usado só pra registrar na auditoria. */
+  static async update(organizacaoId: string, id: string, autorId: string, data: AtualizarFuncionarioDTO) {
+    const existente = await this.findOrFail(organizacaoId, id);
 
     if (data.codigo) {
-      const existente = await UsuarioRepository.findByCodigo(organizacaoId, data.codigo);
-      if (existente && existente.id !== id) {
+      const jaExiste = await UsuarioRepository.findByCodigo(organizacaoId, data.codigo);
+      if (jaExiste && jaExiste.id !== id) {
         throw AppError.conflict(`Já existe um funcionário com o código "${data.codigo}".`);
       }
     }
@@ -84,6 +86,20 @@ export class UsuarioService {
 
     const atualizado = await UsuarioRepository.update(id, alteracoes);
     logger.info('Funcionário atualizado', { usuarioId: id, organizacaoId, alteracoes: resto });
+
+    // Concessão/revogação do atalho pro painel do gestor é sensível o
+    // bastante (dá visibilidade de um botão de login de gestor no painel de
+    // funcionário) pra valer um registro consultável pelo próprio gestor.
+    if (typeof data.podeAcessarGestor === 'boolean' && data.podeAcessarGestor !== existente.podeAcessarGestor) {
+      const autor = await UsuarioRepository.findById(autorId);
+      await AuditoriaService.registrar(
+        organizacaoId,
+        { nome: autor?.nome ?? '—', email: autor?.email ?? null },
+        data.podeAcessarGestor ? 'funcionario.acesso_gestor_concedido' : 'funcionario.acesso_gestor_revogado',
+        existente.nome,
+      );
+    }
+
     return sanitize(atualizado!);
   }
 

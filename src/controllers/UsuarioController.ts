@@ -30,7 +30,7 @@ export class UsuarioController {
 
   static async update(req: AuthenticatedRequest, res: Response) {
     const data = atualizarFuncionarioSchema.parse(req.body);
-    const funcionario = await UsuarioService.update(req.usuario!.organizacaoId, req.params.id, data);
+    const funcionario = await UsuarioService.update(req.usuario!.organizacaoId, req.params.id, req.usuario!.id, data);
     res.status(200).json(funcionario);
   }
 

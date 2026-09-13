@@ -5,6 +5,7 @@ import { ArmazenamentoApp } from '../models/ArmazenamentoApp';
 import { Categoria } from '../models/Categoria';
 import { Despesa } from '../models/Despesa';
 import { Organizacao } from '../models/Organizacao';
+import { RegistroAuditoria } from '../models/RegistroAuditoria';
 import { Usuario } from '../models/Usuario';
 
 /**
@@ -24,6 +25,6 @@ export const AppDataSource = new DataSource({
   database: env.db.database,
   synchronize: false,
   logging: isProduction ? ['error', 'warn'] : ['error', 'warn', 'schema'],
-  entities: [Organizacao, Usuario, Categoria, Despesa, ArmazenamentoApp],
+  entities: [Organizacao, Usuario, Categoria, Despesa, ArmazenamentoApp, RegistroAuditoria],
   migrations: [__dirname + '/../migrations/*.{ts,js}'],
 });

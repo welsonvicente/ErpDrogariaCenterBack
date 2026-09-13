@@ -5,6 +5,7 @@ import { CategoriaRepository } from '../repositories/CategoriaRepository';
 import { DespesaRepository, FiltrosDespesa } from '../repositories/DespesaRepository';
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
 import { AppError } from '../utils/AppError';
+import { AuditoriaService } from './AuditoriaService';
 
 /** Remove os hashes sensíveis de um Usuario antes de expô-lo pela API. */
 function sanitizeUsuario(usuario: Despesa['usuario']) {
@@ -116,7 +117,8 @@ export class DespesaService {
     return this.getById(organizacaoId, despesa.id);
   }
 
-  static async update(organizacaoId: string, id: string, data: AtualizarDespesaDTO) {
+  /** `autorId` é quem está autenticado fazendo a edição — usado só pra registrar na auditoria. */
+  static async update(organizacaoId: string, id: string, autorId: string, data: AtualizarDespesaDTO) {
     const existente = await this.findOrFail(organizacaoId, id);
     const categoria = await this.assertCategoriaExiste(organizacaoId, data.categoriaId);
 
@@ -134,13 +136,30 @@ export class DespesaService {
     });
 
     logger.info('Despesa atualizada', { despesaId: id, organizacaoId, alteracoes: data });
+    const autor = await UsuarioRepository.findById(autorId);
+    await AuditoriaService.registrar(
+      organizacaoId,
+      { nome: autor?.nome ?? '—', email: autor?.email ?? null },
+      'despesa.editada',
+      `${existente.usuario.nome} — ${existente.categoria.nome} — R$ ${existente.valor}`,
+    );
+
     return this.getById(organizacaoId, id);
   }
 
-  static async remove(organizacaoId: string, id: string) {
-    await this.findOrFail(organizacaoId, id);
+  /** `autorId` é quem está autenticado fazendo a exclusão — usado só pra registrar na auditoria. */
+  static async remove(organizacaoId: string, id: string, autorId: string) {
+    const despesa = await this.findOrFail(organizacaoId, id);
     await DespesaRepository.remove(id);
     logger.info('Despesa removida', { despesaId: id, organizacaoId });
+
+    const autor = await UsuarioRepository.findById(autorId);
+    await AuditoriaService.registrar(
+      organizacaoId,
+      { nome: autor?.nome ?? '—', email: autor?.email ?? null },
+      'despesa.excluida',
+      `${despesa.usuario.nome} — ${despesa.categoria.nome} — R$ ${despesa.valor}`,
+    );
   }
 
   /** Todas as despesas que batem com o filtro (sem paginação) — usado na exportação Excel/PDF. */

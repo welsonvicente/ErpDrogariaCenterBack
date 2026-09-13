@@ -37,12 +37,12 @@ export class DespesaController {
 
   static async update(req: AuthenticatedRequest, res: Response) {
     const data = atualizarDespesaSchema.parse(req.body);
-    const despesa = await DespesaService.update(req.usuario!.organizacaoId, req.params.id, data);
+    const despesa = await DespesaService.update(req.usuario!.organizacaoId, req.params.id, req.usuario!.id, data);
     res.status(200).json(despesa);
   }
 
   static async remove(req: AuthenticatedRequest, res: Response) {
-    await DespesaService.remove(req.usuario!.organizacaoId, req.params.id);
+    await DespesaService.remove(req.usuario!.organizacaoId, req.params.id, req.usuario!.id);
     res.status(204).send();
   }
 }
