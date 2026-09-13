@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
 import { env } from '../config/env';
 
 /**
@@ -146,4 +147,47 @@ export function protegerGravacao(valorAnteriorJson: string | null, valorNovoJson
   }
 
   return JSON.stringify(novo);
+}
+
+/**
+ * Formato mínimo aceitável do estado da ferramenta de Folgas — não valida o
+ * conteúdo de cada item (isso continua sendo responsabilidade do cliente),
+ * só garante que os campos conhecidos, quando presentes, são do tipo certo
+ * (array/objeto). Isso é o suficiente pra barrar o caso real que
+ * importa: um bug no cliente (ou uma gravação truncada) mandando algo como
+ * `employees: "oops"` — um JSON tecnicamente válido, mas que quebraria a
+ * ferramenta pra QUALQUER pessoa que carregasse esse estado depois, exigindo
+ * mexer direto no banco pra corrigir. `.passthrough()` deixa passar campos
+ * desconhecidos, pra uma versão futura da ferramenta poder adicionar campos
+ * sem precisar de uma atualização correspondente aqui.
+ */
+const estadoFolgasSchema = z
+  .object({
+    employees: z.array(z.any()).optional(),
+    credits: z.array(z.any()).optional(),
+    daysOff: z.array(z.any()).optional(),
+    leaves: z.array(z.any()).optional(),
+    creditSwaps: z.array(z.any()).optional(),
+    blockedDates: z.array(z.any()).optional(),
+    blockedWeekdays: z.array(z.any()).optional(),
+    auditLog: z.array(z.any()).optional(),
+    rolePasswords: z.record(z.string()).optional(),
+  })
+  .passthrough();
+
+/** Devolve uma mensagem de erro se `valorJson` não tiver o formato mínimo esperado, ou `null` se estiver ok. */
+export function validarFormatoEstado(valorJson: string): string | null {
+  let estado: unknown;
+  try {
+    estado = JSON.parse(valorJson);
+  } catch {
+    return 'O valor não é um JSON válido.'; // defesa extra — já barrado antes pelo DTO genérico
+  }
+
+  const resultado = estadoFolgasSchema.safeParse(estado);
+  if (resultado.success) return null;
+
+  const primeiroProblema = resultado.error.issues[0];
+  const campo = primeiroProblema.path.join('.') || '(raiz)';
+  return `Formato inválido no campo "${campo}": ${primeiroProblema.message}`;
 }

@@ -9,6 +9,7 @@ import {
   estaElevado,
   protegerGravacao,
   redigirEstado,
+  validarFormatoEstado,
   verificarCredencial,
 } from '../services/FolgasSigiloService';
 import { AppError } from '../utils/AppError';
@@ -46,9 +47,20 @@ export class ArmazenamentoAppController {
     const token = req.header(HEADER_ELEVACAO);
 
     let valorFinal = valor;
-    if (chave === CHAVE_FOLGAS && !estaElevado(token, organizacaoId, chave)) {
-      const registroAtual = await ArmazenamentoAppService.get(organizacaoId, chave);
-      valorFinal = protegerGravacao(registroAtual?.valor ?? null, valor);
+    if (chave === CHAVE_FOLGAS) {
+      if (!estaElevado(token, organizacaoId, chave)) {
+        const registroAtual = await ArmazenamentoAppService.get(organizacaoId, chave);
+        valorFinal = protegerGravacao(registroAtual?.valor ?? null, valor);
+      }
+
+      // Barra aqui um formato claramente quebrado (ex.: `employees` virando
+      // uma string por bug no cliente) — sem isso, um valor assim ficaria
+      // salvo e quebraria a ferramenta pra QUALQUER pessoa na próxima
+      // leitura, só corrigível mexendo direto no banco.
+      const erroFormato = validarFormatoEstado(valorFinal);
+      if (erroFormato) {
+        throw new AppError(erroFormato, 400);
+      }
     }
 
     if (versaoEsperada === undefined) {
