@@ -15,6 +15,16 @@ import routes from './routes';
 export function createApp() {
   const app = express();
 
+  // Em produção, o Node fica atrás de um proxy reverso que termina o HTTPS
+  // (o app não faz TLS sozinho, mas o CORS já é liberado pra um domínio
+  // https://) — sem isso, toda a rede identificaria como um "único IP" (o do
+  // proxy) pra rate-limit, fazendo uma pessoa esbarrar no limite de login
+  // travar todo mundo atrás do mesmo proxy. "1" = confia só no cabeçalho
+  // vindo desse primeiro salto, não em qualquer proxy declarado pelo cliente.
+  if (env.nodeEnv === 'production') {
+    app.set('trust proxy', 1);
+  }
+
   app.use(
     cors({
       origin(origin, callback) {

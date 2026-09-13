@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ArmazenamentoAppController } from '../controllers/ArmazenamentoAppController';
 import { authenticate } from '../middlewares/authMiddleware';
+import { loginRateLimiter } from '../middlewares/rateLimitMiddleware';
 import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
@@ -14,6 +15,8 @@ const router = Router();
 // prova essa elevação. Ver FolgasSigiloService pro motivo completo.
 router.get('/:chave', authenticate, asyncHandler(ArmazenamentoAppController.get));
 router.put('/:chave', authenticate, asyncHandler(ArmazenamentoAppController.set));
-router.post('/:chave/elevar', authenticate, asyncHandler(ArmazenamentoAppController.elevar));
+// Limitada por IP: a senha de papel (5 dígitos) e o código de funcionário
+// promovido são forçáveis por script sem isso — ver rateLimitMiddleware.ts.
+router.post('/:chave/elevar', authenticate, loginRateLimiter, asyncHandler(ArmazenamentoAppController.elevar));
 
 export default router;
