@@ -1,6 +1,9 @@
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Jest já define NODE_ENV=test sozinho — isso deixa os testes usarem um
+// banco de dados totalmente separado (.env.test) do banco de desenvolvimento,
+// pra nunca truncar/sujar dados reais ao rodar a suíte de testes.
+dotenv.config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' });
 
 /**
  * Lê uma variável de ambiente obrigatória.
@@ -55,3 +58,4 @@ export const env = {
 };
 
 export const isProduction = env.nodeEnv === 'production';
+export const isTest = env.nodeEnv === 'test';

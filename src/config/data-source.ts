@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { env, isProduction } from './env';
+import { env, isProduction, isTest } from './env';
 import { ArmazenamentoApp } from '../models/ArmazenamentoApp';
 import { Categoria } from '../models/Categoria';
 import { Despesa } from '../models/Despesa';
@@ -24,7 +24,11 @@ export const AppDataSource = new DataSource({
   password: env.db.password,
   database: env.db.database,
   synchronize: false,
-  logging: isProduction ? ['error', 'warn'] : ['error', 'warn', 'schema'],
+  // Em teste, alguns cenários exercitam de propósito um caminho de erro
+  // esperado (ex.: violação de unique numa corrida de concorrência) — sem
+  // silenciar aqui, a saída dos testes fica cheia de "erros" que na
+  // verdade são o comportamento correto sendo testado.
+  logging: isTest ? false : isProduction ? ['error', 'warn'] : ['error', 'warn', 'schema'],
   entities: [Organizacao, Usuario, Categoria, Despesa, ArmazenamentoApp, RegistroAuditoria],
   migrations: [__dirname + '/../migrations/*.{ts,js}'],
 });
