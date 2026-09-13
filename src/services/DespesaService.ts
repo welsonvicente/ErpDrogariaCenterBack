@@ -120,8 +120,16 @@ export class DespesaService {
   }
 
   static async update(organizacaoId: string, id: string, data: AtualizarDespesaDTO) {
-    await this.findOrFail(organizacaoId, id);
-    await this.assertCategoriaExiste(organizacaoId, data.categoriaId);
+    const existente = await this.findOrFail(organizacaoId, id);
+    const categoria = await this.assertCategoriaExiste(organizacaoId, data.categoriaId);
+
+    // Resolve pro valor FINAL (o que já estava, a menos que essa edição
+    // esteja mudando) — sem isso, trocar só a categoria pra "Diária de
+    // domingo ou feriado" numa edição passava sem exigir o beneficiário,
+    // diferente do que já acontece ao lançar o gasto pela primeira vez.
+    const categoriaNomeFinal = categoria?.nome ?? existente.categoria.nome;
+    const beneficiarioIdFinal = 'beneficiarioId' in data ? data.beneficiarioId : existente.beneficiarioId;
+    await this.assertBeneficiario(organizacaoId, categoriaNomeFinal, beneficiarioIdFinal);
 
     await DespesaRepository.update(id, {
       ...data,
