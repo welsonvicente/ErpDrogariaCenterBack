@@ -4,6 +4,8 @@ export const criarCategoriaSchema = z.object({
   nome: z.string().trim().min(2, 'Nome deve ter ao menos 2 caracteres.'),
   icone: z.string().trim().min(1).max(8).default('✳️'),
   ordem: z.number().int().nonnegative().default(0),
+  /** Lançar um gasto nessa categoria vai exigir escolher quem recebeu o valor — ver Categoria.exigeBeneficiario. */
+  exigeBeneficiario: z.boolean().default(false),
 });
 export type CriarCategoriaDTO = z.infer<typeof criarCategoriaSchema>;
 

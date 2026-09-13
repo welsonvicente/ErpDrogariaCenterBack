@@ -1,6 +1,10 @@
 /**
  * Categorias de despesa que toda organização nova já ganha pronta (seed e
  * cadastro público de organização usam a mesma lista, pra não desalinhar).
+ *
+ * `exigeBeneficiario`: quando true, lançar um gasto nessa categoria exige
+ * escolher o colaborador que recebeu o valor (ver Categoria.exigeBeneficiario
+ * e DespesaService.assertBeneficiario) — hoje só a diária de domingo/feriado.
  */
 export const CATEGORIAS_PADRAO = [
   { nome: 'Combustível', icone: '⛽' },
@@ -14,7 +18,7 @@ export const CATEGORIAS_PADRAO = [
   { nome: 'Embalagens e impressos', icone: '📦' },
   { nome: 'Produto avulso e valor', icone: '🏷️' },
   { nome: 'Entregador terceirizado', icone: '🛵' },
-  { nome: 'Diária de domingo ou feriado', icone: '📅' },
+  { nome: 'Diária de domingo ou feriado', icone: '📅', exigeBeneficiario: true },
   { nome: 'Retirada de vitaminas ou produtos de campanha', icone: '💊' },
   { nome: 'Outros', icone: '✳️' },
 ];

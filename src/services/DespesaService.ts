@@ -6,9 +6,6 @@ import { DespesaRepository, FiltrosDespesa } from '../repositories/DespesaReposi
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
 import { AppError } from '../utils/AppError';
 
-/** Nome exato da categoria que exige escolher quem recebe o valor (ver `assertBeneficiario`). */
-const CATEGORIA_DIARIA_NOME = 'Diária de domingo ou feriado';
-
 /** Remove os hashes sensíveis de um Usuario antes de expô-lo pela API. */
 function sanitizeUsuario(usuario: Despesa['usuario']) {
   const { pinHash, senhaHash, ...publico } = usuario;
@@ -32,14 +29,14 @@ export class DespesaService {
     return categoria;
   }
 
-  /** A categoria "Diária de domingo ou feriado" precisa dizer quem recebeu o dinheiro. */
+  /** Categorias com `exigeBeneficiario` (ex.: Diária de domingo ou feriado) precisam dizer quem recebeu o dinheiro. */
   private static async assertBeneficiario(
     organizacaoId: string,
-    categoriaNome: string | undefined,
+    categoriaExigeBeneficiario: boolean | undefined,
     beneficiarioId: string | null | undefined,
   ) {
-    if (categoriaNome === CATEGORIA_DIARIA_NOME && !beneficiarioId) {
-      throw new AppError('Selecione o colaborador que vai receber a diária.', 400);
+    if (categoriaExigeBeneficiario && !beneficiarioId) {
+      throw new AppError('Selecione o colaborador que vai receber o valor.', 400);
     }
     if (!beneficiarioId) return;
     const beneficiario = await UsuarioRepository.findByIdInOrganizacao(organizacaoId, beneficiarioId);
@@ -95,7 +92,7 @@ export class DespesaService {
   /** `usuarioId` vem de quem está autenticado (não do corpo da requisição) — ver despesa.dto.ts. */
   static async create(organizacaoId: string, usuarioId: string, data: CriarDespesaDTO) {
     const categoria = await this.assertCategoriaExiste(organizacaoId, data.categoriaId);
-    await this.assertBeneficiario(organizacaoId, categoria?.nome, data.beneficiarioId);
+    await this.assertBeneficiario(organizacaoId, categoria?.exigeBeneficiario, data.beneficiarioId);
 
     const despesa = await DespesaRepository.create({
       organizacaoId,
@@ -124,12 +121,12 @@ export class DespesaService {
     const categoria = await this.assertCategoriaExiste(organizacaoId, data.categoriaId);
 
     // Resolve pro valor FINAL (o que já estava, a menos que essa edição
-    // esteja mudando) — sem isso, trocar só a categoria pra "Diária de
-    // domingo ou feriado" numa edição passava sem exigir o beneficiário,
-    // diferente do que já acontece ao lançar o gasto pela primeira vez.
-    const categoriaNomeFinal = categoria?.nome ?? existente.categoria.nome;
+    // esteja mudando) — sem isso, trocar só a categoria pra uma que exige
+    // beneficiário numa edição passava sem exigir nada, diferente do que já
+    // acontece ao lançar o gasto pela primeira vez.
+    const categoriaExigeBeneficiarioFinal = categoria?.exigeBeneficiario ?? existente.categoria.exigeBeneficiario;
     const beneficiarioIdFinal = 'beneficiarioId' in data ? data.beneficiarioId : existente.beneficiarioId;
-    await this.assertBeneficiario(organizacaoId, categoriaNomeFinal, beneficiarioIdFinal);
+    await this.assertBeneficiario(organizacaoId, categoriaExigeBeneficiarioFinal, beneficiarioIdFinal);
 
     await DespesaRepository.update(id, {
       ...data,

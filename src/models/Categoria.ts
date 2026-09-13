@@ -39,6 +39,17 @@ export class Categoria {
   @Column({ default: true })
   ativo!: boolean;
 
+  /**
+   * Quando true, lançar uma despesa nessa categoria exige informar quem
+   * recebeu o valor (ver DespesaService.assertBeneficiario) — hoje usado
+   * pela categoria "Diária de domingo ou feriado". Antes essa regra
+   * comparava o nome da categoria por string; um gestor renomeando a
+   * categoria fazia a exigência sumir sem aviso. Uma coluna própria
+   * sobrevive a renomeações e permite marcar outras categorias no futuro.
+   */
+  @Column({ name: 'exige_beneficiario', default: false })
+  exigeBeneficiario!: boolean;
+
   @OneToMany(() => Despesa, (despesa) => despesa.categoria)
   despesas!: Despesa[];
 

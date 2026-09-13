@@ -46,7 +46,9 @@ async function seedCategorias(organizacaoId: string) {
     const existente = await repo.findOne({ where: { organizacaoId, nome: cat.nome } });
     if (existente) continue;
 
-    await repo.save(repo.create({ organizacaoId, nome: cat.nome, icone: cat.icone, ordem: index }));
+    await repo.save(
+      repo.create({ organizacaoId, nome: cat.nome, icone: cat.icone, ordem: index, exigeBeneficiario: cat.exigeBeneficiario ?? false }),
+    );
     logger.info(`Categoria seedada: ${cat.nome}`);
   }
 }
