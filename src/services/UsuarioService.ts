@@ -1,6 +1,5 @@
 import bcrypt from 'bcryptjs';
 import { logger } from '../config/logger';
-import { CODIGO_MIN_CARACTERES_GESTOR } from '../constants/credenciais';
 import { AtualizarFuncionarioDTO, CriarFuncionarioDTO } from '../dtos/usuario.dto';
 import { PerfilUsuario, Usuario } from '../models/Usuario';
 import { DespesaRepository } from '../repositories/DespesaRepository';
@@ -137,19 +136,13 @@ export class UsuarioService {
     const papelFinal = data.perfil ?? existente.perfil;
     const temGestao = papelFinal === PerfilUsuario.ADMIN || papelFinal === PerfilUsuario.GERENTE;
 
-    // Quem administra e entra pelo balcão precisa de um código que identifique de
-    // verdade — o código é o "usuário" desse login. Conferido aqui, e não no DTO,
-    // porque depende do valor atual (que pode nem vir nesta requisição).
-    if (temGestao) {
-      const codigoFinal = data.codigo ?? existente.codigo ?? '';
-      if (codigoFinal && codigoFinal.length < CODIGO_MIN_CARACTERES_GESTOR) {
-        throw new AppError(
-          `Quem acessa o Painel do Gerente precisa de um código de ao menos ${CODIGO_MIN_CARACTERES_GESTOR} caracteres. ` +
-            `O código atual ("${codigoFinal}") é curto demais — defina um novo ao promover.`,
-          422,
-        );
-      }
-    }
+    // Não há exigência de tamanho para o código, nem para quem tem papel de
+    // gestão: ele é o identificador do funcionário dentro da organização, um
+    // dado do negócio, e quem decide o formato é a empresa. O que protege a
+    // conta é o PIN (6+ dígitos para gestão, definido pela própria pessoa) e o
+    // bloqueio por conta em utils/tentativasLogin.ts — um código curto não
+    // enfraquece nenhum dos dois, já que o atacante ainda precisa do PIN e o
+    // bloqueio conta por conta.
 
     const { pin, ...resto } = data;
     const alteracoes: Record<string, unknown> = { ...resto };

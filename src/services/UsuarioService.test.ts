@@ -83,14 +83,21 @@ describe('UsuarioService.update — mudança de papel', () => {
     expect(atualizado.pinForte).toBe(false);
   });
 
-  it('recusa promover quem tem código curto demais pra identificar no balcão', async () => {
+  // O código é identificador de negócio, definido pela empresa — não tem regra de
+  // tamanho, nem para quem tem papel de gestão. Quem protege a conta é o PIN e o
+  // bloqueio por tentativas. Houve uma exigência de 3+ caracteres aqui que, além
+  // de não comprar segurança, disparava em QUALQUER edição de uma conta de
+  // gestão: redefinir o PIN de alguém com código curto era recusado.
+  it('não barra por causa do tamanho do código — nem ao promover, nem ao redefinir PIN', async () => {
     const org = await criarOrganizacao();
     const admin = await criarAdmin(org.id);
-    const funcionario = await criarFuncionario(org.id, { codigo: '1' });
+    const funcionario = await criarFuncionario(org.id, { codigo: '13' });
 
-    await expect(
-      UsuarioService.update(org.id, funcionario.id, admin.id, { perfil: PerfilUsuario.GERENTE }, true),
-    ).rejects.toMatchObject({ statusCode: 422 });
+    const promovido = await UsuarioService.update(org.id, funcionario.id, admin.id, { perfil: PerfilUsuario.GERENTE }, true);
+    expect(promovido.perfil).toBe(PerfilUsuario.GERENTE);
+
+    const comPinNovo = await UsuarioService.update(org.id, funcionario.id, admin.id, { pin: '987654' }, true);
+    expect(comPinNovo.codigo).toBe('13');
   });
 
   it('não deixa rebaixar o último ADMIN — a organização ficaria sem dono', async () => {
