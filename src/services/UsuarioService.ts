@@ -140,7 +140,7 @@ export class UsuarioService {
     // gestão: ele é o identificador do funcionário dentro da organização, um
     // dado do negócio, e quem decide o formato é a empresa. O que protege a
     // conta é o PIN (6+ dígitos para gestão, definido pela própria pessoa) e o
-    // bloqueio por conta em utils/tentativasLogin.ts — um código curto não
+    // rate limit por IP — um código curto não
     // enfraquece nenhum dos dois, já que o atacante ainda precisa do PIN e o
     // bloqueio conta por conta.
 

@@ -8,7 +8,6 @@ import { OrganizacaoRepository } from '../repositories/OrganizacaoRepository';
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
 import { CredencialUsada } from '../middlewares/authMiddleware';
 import { AppError } from '../utils/AppError';
-import { registrarFalha, registrarSucesso, segundosDeBloqueio } from '../utils/tentativasLogin';
 
 async function resolverOrganizacaoAtiva(slug: string) {
   const organizacao = await OrganizacaoRepository.findBySlug(slug);
@@ -36,25 +35,12 @@ export class AuthService {
    *    usuário "descobre" a que empresa ele pertence sem precisar saber o slug de antemão.
    */
   static async login({ organizacaoSlug, email, senha }: LoginDTO) {
-    // Mesmo bloqueio por conta do login de funcionário. Na tela raiz ainda não
-    // sabemos a organização, então o contador é global pra esse e-mail — o que
-    // é o escopo certo, já que a busca também é global ali.
-    const escopoBloqueio = organizacaoSlug ?? 'global';
-    const bloqueio = segundosDeBloqueio(escopoBloqueio, email);
-    if (bloqueio !== null) {
-      throw new AppError(
-        `Muitas tentativas erradas nessa conta. Tente de novo em ${Math.ceil(bloqueio / 60)} minuto(s).`,
-        429,
-      );
-    }
-
     const usuario = organizacaoSlug
       ? await UsuarioRepository.findByEmail((await resolverOrganizacaoAtiva(organizacaoSlug)).id, email)
       : await UsuarioRepository.findByEmailGlobal(email);
 
     if (!usuario || !usuario.ativo || !usuario.senhaHash) {
       logger.warn('Tentativa de login com e-mail inexistente/inativo', { organizacaoSlug, email });
-      registrarFalha(escopoBloqueio, email);
       throw AppError.unauthorized('E-mail ou senha inválidos.');
     }
 
@@ -68,11 +54,8 @@ export class AuthService {
     const senhaConfere = await bcrypt.compare(senha, usuario.senhaHash);
     if (!senhaConfere) {
       logger.warn('Tentativa de login com senha incorreta', { usuarioId: usuario.id });
-      registrarFalha(escopoBloqueio, email);
       throw AppError.unauthorized('E-mail ou senha inválidos.');
     }
-
-    registrarSucesso(escopoBloqueio, email);
 
     const organizacao = await OrganizacaoRepository.findById(usuario.organizacaoId);
     if (!organizacao || !organizacao.ativo) {
@@ -97,32 +80,19 @@ export class AuthService {
   static async loginFuncionario({ organizacaoSlug, codigo, pin }: LoginFuncionarioDTO) {
     const organizacao = await resolverOrganizacaoAtiva(organizacaoSlug);
 
-    // Bloqueio por conta, além do rate limit por IP — ver utils/tentativasLogin.ts.
-    const bloqueio = segundosDeBloqueio(organizacao.id, codigo);
-    if (bloqueio !== null) {
-      throw new AppError(
-        `Muitas tentativas erradas nesse código. Tente de novo em ${Math.ceil(bloqueio / 60)} minuto(s).`,
-        429,
-      );
-    }
-
     const usuario = await UsuarioRepository.findByCodigo(organizacao.id, codigo);
     if (!usuario || !usuario.ativo || !usuario.pinHash) {
-      // O código em si não vai pro log: ele é metade da credencial, e o log fica
-      // em arquivo rotacionado. O contador de falhas já identifica a conta.
+      // O código não vai pro log: é metade da credencial, e o log fica em arquivo
+      // rotacionado.
       logger.warn('Tentativa de login de funcionário com código inválido', { organizacaoId: organizacao.id });
-      registrarFalha(organizacao.id, codigo);
       throw AppError.unauthorized('Código ou PIN inválidos.');
     }
 
     const pinConfere = await bcrypt.compare(pin, usuario.pinHash);
     if (!pinConfere) {
       logger.warn('Tentativa de login de funcionário com PIN incorreto', { usuarioId: usuario.id });
-      registrarFalha(organizacao.id, codigo);
       throw AppError.unauthorized('Código ou PIN inválidos.');
     }
-
-    registrarSucesso(organizacao.id, codigo);
 
     // Sessão de funcionário expira mais rápido: uso típico é em terminal compartilhado no balcão.
     const token = gerarToken(

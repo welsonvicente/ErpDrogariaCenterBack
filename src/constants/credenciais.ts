@@ -12,9 +12,9 @@
  * negócio, e quem define o formato é a empresa.
  *
  * Não é um piso alto — é o mínimo pra que uma tentativa cega deixe de ser
- * trivial. O que de fato segura força bruta é o bloqueio por conta
- * (ver utils/tentativasLogin.ts), já que o rate limit por IP sozinho não
- * distingue o balcão inteiro atrás de um NAT de um atacante rotacionando IPs.
+ * trivial — não há mais bloqueio por tentativas erradas, removido a pedido,
+ * então o que resta é o rate limit por IP (middlewares/rateLimitMiddleware.ts),
+ * que não distingue o balcão atrás de um NAT de quem rotaciona IPs.
  */
 export const PIN_MIN_DIGITOS = 4;
 export const PIN_MAX_DIGITOS = 8;
