@@ -31,7 +31,7 @@ export class ArmazenamentoApp {
    * otimista (ver ArmazenamentoAppRepository.atualizarComVersao): quem
    * salva precisa dizer qual versão viu por último, e a gravação só
    * acontece se ninguém mais tiver salvo nesse meio-tempo. Sem isso, duas
-   * pessoas editando ao mesmo tempo (ex.: gestor e funcionário no banco de
+   * pessoas editando ao mesmo tempo (ex.: gerente e funcionário no banco de
    * folgas) faziam quem salvasse por último apagar a mudança do outro sem
    * nenhum aviso.
    */

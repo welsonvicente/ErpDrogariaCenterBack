@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 /**
- * Login de ADMIN/GESTOR: e-mail + senha.
+ * Login de ADMIN/GERENTE: e-mail + senha.
  *
  * `organizacaoSlug` é opcional: quando o front já sabe a organização (rota
- * "/:orgSlug/gestor/login"), ele é enviado e a busca fica restrita a ela.
+ * "/:orgSlug/gerente/login"), ele é enviado e a busca fica restrita a ela.
  * Quando não é enviado (tela inicial "/", antes de saber a organização), o
  * login busca o e-mail em todas as organizações — ver AuthService.login.
  */

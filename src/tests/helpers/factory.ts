@@ -70,9 +70,9 @@ export async function criarCategoria(organizacaoId: string, overrides: Partial<C
 }
 
 /** Token JWT no mesmo formato que AuthService gera — evita passar pelo login de verdade (bcrypt+senha) em todo teste. */
-export function gerarToken(usuario: Pick<Usuario, 'id' | 'organizacaoId' | 'perfil' | 'email'>) {
+export function gerarToken(usuario: Pick<Usuario, 'id' | 'organizacaoId' | 'perfil' | 'email'>, via: 'senha' | 'pin' = usuario.email ? 'senha' : 'pin') {
   return jwt.sign(
-    { sub: usuario.id, organizacaoId: usuario.organizacaoId, perfil: usuario.perfil, email: usuario.email },
+    { sub: usuario.id, organizacaoId: usuario.organizacaoId, perfil: usuario.perfil, email: usuario.email, via },
     env.jwt.secret,
     { expiresIn: '1h' },
   );

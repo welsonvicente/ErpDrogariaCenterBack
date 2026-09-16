@@ -17,13 +17,13 @@ import { Organizacao } from './Organizacao';
  * módulo, atual ou futuro) é um Usuario vinculado a uma Organizacao.
  *
  * Dois jeitos de entrar, de acordo com o perfil:
- *  - ADMIN/GESTOR: e-mail + senha (login completo, acesso ao dashboard).
+ *  - ADMIN/GERENTE: e-mail + senha (login completo, acesso ao dashboard).
  *  - FUNCIONARIO: código + PIN (login rápido, pensado para uso no balcão,
  *    em terminal compartilhado, sem digitar senha longa).
  */
 export enum PerfilUsuario {
   ADMIN = 'ADMIN',
-  GESTOR = 'GESTOR',
+  GERENTE = 'GERENTE',
   FUNCIONARIO = 'FUNCIONARIO',
 }
 
@@ -44,11 +44,11 @@ export class Usuario {
   @Column({ length: 120 })
   nome!: string;
 
-  /** Obrigatório para ADMIN/GESTOR; opcional para FUNCIONARIO. */
+  /** Obrigatório para ADMIN/GERENTE; opcional para FUNCIONARIO. */
   @Column({ type: 'varchar', length: 160, nullable: true })
   email!: string | null;
 
-  /** Hash bcrypt da senha (login de ADMIN/GESTOR). Nulo para FUNCIONARIO. */
+  /** Hash bcrypt da senha (login de ADMIN/GERENTE). Nulo para FUNCIONARIO. */
   @Column({ type: 'varchar', name: 'senha_hash', nullable: true })
   senhaHash!: string | null;
 
@@ -56,7 +56,7 @@ export class Usuario {
   @Column({ type: 'varchar', length: 12, nullable: true })
   codigo!: string | null;
 
-  /** Hash bcrypt do PIN numérico usado junto com o código. Nulo para ADMIN/GESTOR. */
+  /** Hash bcrypt do PIN numérico usado junto com o código. Nulo para ADMIN/GERENTE. */
   @Column({ type: 'varchar', name: 'pin_hash', nullable: true })
   pinHash!: string | null;
 
@@ -71,12 +71,22 @@ export class Usuario {
   ativo!: boolean;
 
   /**
-   * Concedido por um gestor a um FUNCIONARIO específico (ver UsuarioService.update) —
-   * faz aparecer, no painel dele, um atalho para a tela de login do gestor. Não dá
-   * acesso nenhum por si só: o login de gestor continua exigindo e-mail/senha próprios.
+   * A pessoa já definiu, ela mesma, um PIN no padrão exigido de quem acessa o
+   * Painel do Gerente (ver constants/credenciais.ts).
+   *
+   * Existe porque o papel muda o que o PIN protege: o de 4 dígitos foi escolhido
+   * pra "lançar um gasto em meu nome", às vezes pelo próprio gerente que
+   * cadastrou a pessoa. Em vez de um PIN padrão (que seria uma credencial de
+   * fábrica conhecida — exatamente o problema que as senhas de papel tinham), o
+   * acesso fica pendente até ela trocar o PIN no primeiro uso, provando saber o
+   * antigo. Volta a false quando alguém é promovido a ADMIN/GERENTE ou quando um
+   * gerente redefine o PIN de alguém — nos dois casos o segredo deixou de ser só dela.
+   *
+   * Só é cobrado de quem entra por PIN: quem entra por e-mail+senha não passa por
+   * esta regra (ver middlewares/authMiddleware.requireGerente).
    */
-  @Column({ name: 'pode_acessar_gestor', default: false })
-  podeAcessarGestor!: boolean;
+  @Column({ name: 'pin_forte', default: false })
+  pinForte!: boolean;
 
   @OneToMany(() => Despesa, (despesa) => despesa.usuario)
   despesas!: Despesa[];

@@ -172,7 +172,7 @@ export class DespesaService {
     return despesas.map(sanitizeDespesa);
   }
 
-  /** Estatísticas para os cards/tabela do dashboard do gestor. */
+  /** Estatísticas para os cards/tabela do dashboard do gerente. */
   static async summary(
     organizacaoId: string,
     query: Pick<ListarDespesasQueryDTO, 'dataInicio' | 'dataFim' | 'usuarioId' | 'categoriaId'>,

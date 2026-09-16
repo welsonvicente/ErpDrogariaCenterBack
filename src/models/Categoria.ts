@@ -43,7 +43,7 @@ export class Categoria {
    * Quando true, lançar uma despesa nessa categoria exige informar quem
    * recebeu o valor (ver DespesaService.assertBeneficiario) — hoje usado
    * pela categoria "Diária de domingo ou feriado". Antes essa regra
-   * comparava o nome da categoria por string; um gestor renomeando a
+   * comparava o nome da categoria por string; um gerente renomeando a
    * categoria fazia a exigência sumir sem aviso. Uma coluna própria
    * sobrevive a renomeações e permite marcar outras categorias no futuro.
    */

@@ -1,10 +1,16 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
+import { PerfilUsuario } from '../models/Usuario';
 import { atualizarFuncionarioSchema, criarFuncionarioSchema } from '../dtos/usuario.dto';
 import { UsuarioService } from '../services/UsuarioService';
 
-/** Gestão de funcionários — todas as rotas exigem gestor autenticado (ver routes/usuario.routes.ts). */
+/** Gestão de funcionários — todas as rotas exigem gerente autenticado (ver routes/usuario.routes.ts). */
 export class UsuarioController {
+  /** Só o ADMIN mexe em contas de gestão — ver UsuarioService.assertPodeGerenciar. */
+  private static ehAdmin(req: AuthenticatedRequest) {
+    return req.usuario!.perfil === PerfilUsuario.ADMIN;
+  }
+
   static async list(req: AuthenticatedRequest, res: Response) {
     const incluirInativos = req.query.incluirInativos === 'true';
     const funcionarios = await UsuarioService.list(req.usuario!.organizacaoId, incluirInativos);
@@ -30,22 +36,22 @@ export class UsuarioController {
 
   static async update(req: AuthenticatedRequest, res: Response) {
     const data = atualizarFuncionarioSchema.parse(req.body);
-    const funcionario = await UsuarioService.update(req.usuario!.organizacaoId, req.params.id, req.usuario!.id, data);
+    const funcionario = await UsuarioService.update(req.usuario!.organizacaoId, req.params.id, req.usuario!.id, data, UsuarioController.ehAdmin(req));
     res.status(200).json(funcionario);
   }
 
   static async deactivate(req: AuthenticatedRequest, res: Response) {
-    await UsuarioService.deactivate(req.usuario!.organizacaoId, req.params.id);
+    await UsuarioService.deactivate(req.usuario!.organizacaoId, req.params.id, UsuarioController.ehAdmin(req));
     res.status(204).send();
   }
 
   static async activate(req: AuthenticatedRequest, res: Response) {
-    const funcionario = await UsuarioService.activate(req.usuario!.organizacaoId, req.params.id);
+    const funcionario = await UsuarioService.activate(req.usuario!.organizacaoId, req.params.id, UsuarioController.ehAdmin(req));
     res.status(200).json(funcionario);
   }
 
   static async remove(req: AuthenticatedRequest, res: Response) {
-    await UsuarioService.remove(req.usuario!.organizacaoId, req.params.id);
+    await UsuarioService.remove(req.usuario!.organizacaoId, req.params.id, UsuarioController.ehAdmin(req));
     res.status(204).send();
   }
 }

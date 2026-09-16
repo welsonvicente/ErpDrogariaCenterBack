@@ -18,12 +18,12 @@ export class UsuarioRepository {
   }
 
   /**
-   * Busca um ADMIN/GESTOR pelo e-mail em QUALQUER organização — usado só na
+   * Busca um ADMIN/GERENTE pelo e-mail em QUALQUER organização — usado só na
    * tela de login inicial ("/"), antes de sabermos a qual organização o
    * usuário pertence. Nunca usar isso para FUNCIONARIO (login é por código+PIN).
    */
   static findByEmailGlobal(email: string) {
-    return this.repo.findOne({ where: { email, perfil: In([PerfilUsuario.ADMIN, PerfilUsuario.GESTOR]) } });
+    return this.repo.findOne({ where: { email, perfil: In([PerfilUsuario.ADMIN, PerfilUsuario.GERENTE]) } });
   }
 
   static findByCodigo(organizacaoId: string, codigo: string) {
@@ -38,7 +38,18 @@ export class UsuarioRepository {
     return this.repo.findOne({ where: { id, organizacaoId } });
   }
 
-  /** Lista os funcionários (perfil FUNCIONARIO) de uma organização — usado na tela de gestão do gestor. */
+  /**
+   * Todos os usuários da organização — a tela de gestão precisa enxergar também
+   * gerentes e admins, senão o ADMIN não teria como rebaixar ninguém.
+   */
+  static findTodos(organizacaoId: string, incluirInativos = false) {
+    return this.repo.find({
+      where: incluirInativos ? { organizacaoId } : { organizacaoId, ativo: true },
+      order: { nome: 'ASC' },
+    });
+  }
+
+  /** Só os FUNCIONARIOs — usado no seletor "quem recebeu a diária" (ver UsuarioService.listColegas). */
   static findFuncionarios(organizacaoId: string, incluirInativos = false) {
     return this.repo.find({
       where: incluirInativos
@@ -46,6 +57,11 @@ export class UsuarioRepository {
         : { organizacaoId, perfil: PerfilUsuario.FUNCIONARIO, ativo: true },
       order: { nome: 'ASC' },
     });
+  }
+
+  /** Quantos ADMINs ativos a organização tem — usado pra nunca deixar ficar sem nenhum. */
+  static contarAdminsAtivos(organizacaoId: string) {
+    return this.repo.count({ where: { organizacaoId, perfil: PerfilUsuario.ADMIN, ativo: true } });
   }
 
   static create(data: Partial<Usuario>) {

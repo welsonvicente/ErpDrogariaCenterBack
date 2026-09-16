@@ -7,11 +7,11 @@ interface AutorAuditoria {
 }
 
 /**
- * Trilha de ações sensíveis consultável pelo gestor pela tela (diferente do
+ * Trilha de ações sensíveis consultável pelo gerente pela tela (diferente do
  * `logger.info` estruturado, que só existe nos logs do servidor). Escopo
  * deliberadamente pequeno: só as ações que já foram sinalizadas como
  * precisando de rastreabilidade (editar/excluir despesa, conceder/revogar o
- * atalho pro painel do gestor) — não é um framework genérico de auditoria
+ * atalho pro painel do gerente) — não é um framework genérico de auditoria
  * pra toda ação do sistema.
  */
 export class AuditoriaService {

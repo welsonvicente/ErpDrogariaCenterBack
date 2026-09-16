@@ -27,7 +27,7 @@ describe('/api/despesas', () => {
     expect(res.body.usuarioId).toBe(funcionario.id);
   });
 
-  it('funcionário (não-gestor) não pode listar todas as despesas da organização (403)', async () => {
+  it('funcionário (não-gerente) não pode listar todas as despesas da organização (403)', async () => {
     const org = await criarOrganizacao();
     const funcionario = await criarFuncionario(org.id);
     const token = gerarToken(funcionario);

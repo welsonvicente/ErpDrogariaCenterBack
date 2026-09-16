@@ -31,7 +31,7 @@ function fmtMoeda(valor: string): string {
 }
 
 /**
- * Geração dos arquivos de exportação do dashboard do gestor (Excel/PDF).
+ * Geração dos arquivos de exportação do dashboard do gerente (Excel/PDF).
  * Mora numa camada própria (não em DespesaService) porque é uma
  * responsabilidade diferente de "regra de negócio de despesa": é só
  * apresentação/formatação de um relatório sobre dados já validados.

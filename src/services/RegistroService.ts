@@ -30,7 +30,7 @@ export class RegistroService {
       throw AppError.conflict(`O endereço "${data.slug}" já está em uso. Escolha outro.`);
     }
 
-    // E-mail de ADMIN/GESTOR é buscado globalmente no login da raiz ("/"),
+    // E-mail de ADMIN/GERENTE é buscado globalmente no login da raiz ("/"),
     // então evitamos duas organizações com o mesmo e-mail de admin — senão
     // o login não saberia pra qual organização mandar o usuário.
     const emailExistente = await UsuarioRepository.findByEmailGlobal(data.email);
@@ -70,7 +70,7 @@ export class RegistroService {
 
     // Já loga o usuário automaticamente — mesmo formato de resposta do login geral.
     const token = jwt.sign(
-      { sub: usuario.id, organizacaoId: organizacao.id, perfil: usuario.perfil, email: usuario.email },
+      { sub: usuario.id, organizacaoId: organizacao.id, perfil: usuario.perfil, email: usuario.email, via: 'senha' },
       env.jwt.secret,
       { expiresIn: env.jwt.expiresIn } as jwt.SignOptions,
     );

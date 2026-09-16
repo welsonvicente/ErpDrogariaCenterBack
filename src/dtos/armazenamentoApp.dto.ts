@@ -39,7 +39,7 @@ export type SalvarArmazenamentoDTO = z.infer<typeof salvarArmazenamentoSchema>;
 /**
  * Corpo de `POST /armazenamento/:chave/elevar` — usado hoje só pela chave
  * da ferramenta de Folgas (ver FolgasSigiloService) pra provar acesso de
- * gestor sem nunca expor a credencial real na checagem em si.
+ * gerente sem nunca expor a credencial real na checagem em si.
  */
 export const elevarArmazenamentoSchema = z.union([
   // `papel` não vem do corpo: o cliente não sabe mais quais papéis existem
@@ -49,3 +49,13 @@ export const elevarArmazenamentoSchema = z.union([
   z.object({ tipo: z.literal('funcionario'), funcionarioId: z.string().min(1), codigo: z.string().min(1) }),
 ]);
 export type ElevarArmazenamentoDTO = z.infer<typeof elevarArmazenamentoSchema>;
+
+/**
+ * Corpo de `POST /armazenamento/:chave/identificar` — o código que a pessoa
+ * digitou na entrada da ferramenta de Folgas. A conferência é do servidor: o
+ * cliente não recebe mais `employees[].code` (ver FolgasSigiloService).
+ */
+export const identificarArmazenamentoSchema = z.object({
+  codigo: z.string().trim().min(1, 'Código é obrigatório.').max(20),
+});
+export type IdentificarArmazenamentoDTO = z.infer<typeof identificarArmazenamentoSchema>;

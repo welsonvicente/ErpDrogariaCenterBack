@@ -1,12 +1,20 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
-import { chaveArmazenamentoSchema, elevarArmazenamentoSchema, salvarArmazenamentoSchema } from '../dtos/armazenamentoApp.dto';
+import {
+  chaveArmazenamentoSchema,
+  elevarArmazenamentoSchema,
+  identificarArmazenamentoSchema,
+  salvarArmazenamentoSchema,
+} from '../dtos/armazenamentoApp.dto';
 import { ArmazenamentoAppService } from '../services/ArmazenamentoAppService';
 import {
   CHAVE_FOLGAS,
   HEADER_ELEVACAO,
   emitirTokenElevacao,
   estaElevado,
+  identificarFuncionario,
+  normalizarSenhasDePapel,
+  ocultarSenhasDePapel,
   protegerGravacao,
   redigirEstado,
   validarFormatoEstado,
@@ -14,10 +22,17 @@ import {
 } from '../services/FolgasSigiloService';
 import { AppError } from '../utils/AppError';
 
-/** Aplica a ocultação de dado sensível (ver FolgasSigiloService) quando cabível, antes de expor um valor pela API. */
+/**
+ * Aplica a ocultação de dado sensível (ver FolgasSigiloService) quando cabível,
+ * antes de expor um valor pela API.
+ *
+ * Nem quem elevou o acesso recebe as senhas de papel — elas são write-only pela
+ * API (ver `ocultarSenhasDePapel`). O que a elevação libera é o resto: códigos
+ * dos colaboradores e motivo dos atestados.
+ */
 function talvezRedigir(valor: string, chave: string, organizacaoId: string, token: string | undefined) {
   if (chave !== CHAVE_FOLGAS) return valor;
-  return estaElevado(token, organizacaoId, chave) ? valor : redigirEstado(valor);
+  return estaElevado(token, organizacaoId, chave) ? ocultarSenhasDePapel(valor) : redigirEstado(valor);
 }
 
 export class ArmazenamentoAppController {
@@ -48,10 +63,14 @@ export class ArmazenamentoAppController {
 
     let valorFinal = valor;
     if (chave === CHAVE_FOLGAS) {
-      if (!estaElevado(token, organizacaoId, chave)) {
-        const registroAtual = await ArmazenamentoAppService.get(organizacaoId, chave);
-        valorFinal = protegerGravacao(registroAtual?.valor ?? null, valor);
-      }
+      const registroAtual = await ArmazenamentoAppService.get(organizacaoId, chave);
+      const valorAnterior = registroAtual?.valor ?? null;
+
+      valorFinal = estaElevado(token, organizacaoId, chave)
+        ? // Com acesso elevado a pessoa pode mesmo trocar as senhas de papel —
+          // mas elas nunca são gravadas como texto puro (ver normalizarSenhasDePapel).
+          await normalizarSenhasDePapel(valorAnterior, valor)
+        : protegerGravacao(valorAnterior, valor);
 
       // Barra aqui um formato claramente quebrado (ex.: `employees` virando
       // uma string por bug no cliente) — sem isso, um valor assim ficaria
@@ -96,12 +115,35 @@ export class ArmazenamentoAppController {
     const credencial = elevarArmazenamentoSchema.parse(req.body);
     const registro = await ArmazenamentoAppService.get(req.usuario!.organizacaoId, chave);
 
-    const papel = verificarCredencial(registro?.valor ?? null, credencial);
+    const papel = await verificarCredencial(registro?.valor ?? null, credencial);
     if (!papel) {
       throw AppError.unauthorized('Credencial inválida.');
     }
 
     const token = emitirTokenElevacao(req.usuario!.organizacaoId, chave);
     res.status(200).json({ token, papel });
+  }
+
+  /**
+   * Resolve o código digitado na entrada da ferramenta para o colaborador
+   * correspondente — ver `identificarFuncionario`. O cliente não recebe mais a
+   * lista de códigos, então quem confere é o servidor; a rota é limitada por IP
+   * pra não virar um oráculo de força bruta.
+   */
+  static async identificar(req: AuthenticatedRequest, res: Response) {
+    const chave = chaveArmazenamentoSchema.parse(req.params.chave);
+    if (chave !== CHAVE_FOLGAS) {
+      throw AppError.notFound('Identificação por código', chave);
+    }
+
+    const { codigo } = identificarArmazenamentoSchema.parse(req.body);
+    const registro = await ArmazenamentoAppService.get(req.usuario!.organizacaoId, chave);
+
+    const funcionario = identificarFuncionario(registro?.valor ?? null, codigo);
+    if (!funcionario) {
+      throw AppError.unauthorized('Código inválido.');
+    }
+
+    res.status(200).json(funcionario);
   }
 }

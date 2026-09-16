@@ -8,7 +8,7 @@ import { AuthService } from '../services/AuthService';
  * de negócio deve morar aqui.
  */
 export class AuthController {
-  /** Login de ADMIN/GESTOR. */
+  /** Login de ADMIN/GERENTE. */
   static async login(req: Request, res: Response) {
     const data = loginSchema.parse(req.body);
     const result = await AuthService.login(data);
