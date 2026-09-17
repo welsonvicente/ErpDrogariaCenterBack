@@ -47,7 +47,14 @@ async function seedCategorias(organizacaoId: string) {
     if (existente) continue;
 
     await repo.save(
-      repo.create({ organizacaoId, nome: cat.nome, icone: cat.icone, ordem: index, exigeBeneficiario: cat.exigeBeneficiario ?? false }),
+      repo.create({
+        organizacaoId,
+        nome: cat.nome,
+        icone: cat.icone,
+        ordem: index,
+        exigeBeneficiario: cat.exigeBeneficiario ?? false,
+        exigeQuantidade: cat.exigeQuantidade ?? false,
+      }),
     );
     logger.info(`Categoria seedada: ${cat.nome}`);
   }

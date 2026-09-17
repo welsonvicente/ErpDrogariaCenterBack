@@ -8,8 +8,10 @@ export const criarDespesaSchema = z.object({
   formaPagamento: z.nativeEnum(FormaPagamento, { errorMap: () => ({ message: 'Forma de pagamento inválida.' }) }),
   descricao: z.string().trim().max(500).optional().nullable(),
   categoriaId: z.string().uuid('categoriaId inválido.'),
-  /** Obrigatório apenas para a categoria "Diária de domingo ou feriado" (ver DespesaService.create). */
+  /** Obrigatório só quando a categoria pede (ver Categoria.exigeBeneficiario / DespesaService.create). */
   beneficiarioId: z.string().uuid('beneficiarioId inválido.').optional().nullable(),
+  /** Unidades retiradas. Obrigatório só quando a categoria pede (ver Categoria.exigeQuantidade). */
+  quantidade: z.number().int('Quantidade deve ser um número inteiro.').positive('Quantidade deve ser maior que zero.').optional().nullable(),
 });
 export type CriarDespesaDTO = z.infer<typeof criarDespesaSchema>;
 

@@ -44,6 +44,17 @@ export class DespesaService {
     if (!beneficiario) throw AppError.notFound('Colaborador', beneficiarioId);
   }
 
+  /**
+   * Categorias com `exigeQuantidade` (ex.: Retirada de vitaminas) precisam dizer
+   * quantas unidades saíram — o valor é o total, e sozinho não distingue duas
+   * caixas de vinte.
+   */
+  private static assertQuantidade(categoriaExigeQuantidade: boolean | undefined, quantidade: number | null | undefined) {
+    if (categoriaExigeQuantidade && !quantidade) {
+      throw new AppError('Informe quantas unidades foram retiradas.', 400);
+    }
+  }
+
   static async list(organizacaoId: string, query: ListarDespesasQueryDTO) {
     const filtros: FiltrosDespesa = {
       organizacaoId,
@@ -94,6 +105,7 @@ export class DespesaService {
   static async create(organizacaoId: string, usuarioId: string, data: CriarDespesaDTO) {
     const categoria = await this.assertCategoriaExiste(organizacaoId, data.categoriaId);
     await this.assertBeneficiario(organizacaoId, categoria?.exigeBeneficiario, data.beneficiarioId);
+    this.assertQuantidade(categoria?.exigeQuantidade, data.quantidade);
 
     const despesa = await DespesaRepository.create({
       organizacaoId,
@@ -104,6 +116,7 @@ export class DespesaService {
       usuarioId,
       categoriaId: data.categoriaId,
       beneficiarioId: data.beneficiarioId ?? null,
+      quantidade: data.quantidade ?? null,
     });
 
     logger.info('Despesa lançada', {
@@ -129,6 +142,11 @@ export class DespesaService {
     const categoriaExigeBeneficiarioFinal = categoria?.exigeBeneficiario ?? existente.categoria.exigeBeneficiario;
     const beneficiarioIdFinal = 'beneficiarioId' in data ? data.beneficiarioId : existente.beneficiarioId;
     await this.assertBeneficiario(organizacaoId, categoriaExigeBeneficiarioFinal, beneficiarioIdFinal);
+
+    // Mesma resolução pro valor final, pelo mesmo motivo.
+    const categoriaExigeQuantidadeFinal = categoria?.exigeQuantidade ?? existente.categoria.exigeQuantidade;
+    const quantidadeFinal = 'quantidade' in data ? data.quantidade : existente.quantidade;
+    this.assertQuantidade(categoriaExigeQuantidadeFinal, quantidadeFinal);
 
     await DespesaRepository.update(id, {
       ...data,

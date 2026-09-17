@@ -123,4 +123,84 @@ describe('DespesaService', () => {
       await expect(DespesaService.getById(org.id, despesa.id)).rejects.toThrow();
     });
   });
+
+  /**
+   * "Retirada de vitaminas ou produtos de campanha": o valor é o total, então sem
+   * as unidades não se sabe se saíram duas caixas ou vinte.
+   */
+  describe("quantidade (categorias com exigeQuantidade)", () => {
+    const base = { data: "2026-09-17", valor: 60, formaPagamento: FormaPagamento.DINHEIRO };
+
+    it("recusa lançar sem informar as unidades", async () => {
+      const { org, funcionario, beneficiario, categoria } = await montarCenario({
+        exigeQuantidade: true,
+        exigeBeneficiario: true,
+      });
+
+      await expect(
+        DespesaService.create(org.id, funcionario.id, {
+          ...base,
+          categoriaId: categoria.id,
+          beneficiarioId: beneficiario.id,
+        }),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("guarda as unidades junto do lançamento", async () => {
+      const { org, funcionario, beneficiario, categoria } = await montarCenario({
+        exigeQuantidade: true,
+        exigeBeneficiario: true,
+      });
+
+      const despesa = await DespesaService.create(org.id, funcionario.id, {
+        ...base,
+        categoriaId: categoria.id,
+        beneficiarioId: beneficiario.id,
+        quantidade: 12,
+      });
+
+      expect(despesa.quantidade).toBe(12);
+      expect(despesa.beneficiario?.id).toBe(beneficiario.id);
+    });
+
+    it("recusa quantidade zero ou negativa antes de chegar ao banco", async () => {
+      const { org, funcionario, beneficiario, categoria } = await montarCenario({
+        exigeQuantidade: true,
+        exigeBeneficiario: true,
+      });
+
+      // Zero é barrado em dois lugares: o schema recusa na borda da API, e o
+      // `!quantidade` do service pega mesmo quem chame o service direto — que é
+      // o caminho deste teste.
+      await expect(
+        DespesaService.create(org.id, funcionario.id, {
+          ...base,
+          categoriaId: categoria.id,
+          beneficiarioId: beneficiario.id,
+          quantidade: 0,
+        }),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("categoria que não pede unidades segue lançando sem elas", async () => {
+      const { org, funcionario, categoria } = await montarCenario();
+
+      const despesa = await DespesaService.create(org.id, funcionario.id, { ...base, categoriaId: categoria.id });
+      expect(despesa.quantidade).toBeNull();
+    });
+
+    it("editar para uma categoria que exige unidades cobra as unidades", async () => {
+      const { org, funcionario, beneficiario, categoria } = await montarCenario();
+      const exigente = await criarCategoria(org.id, { exigeQuantidade: true, exigeBeneficiario: true, nome: "Vitaminas" });
+
+      const despesa = await DespesaService.create(org.id, funcionario.id, { ...base, categoriaId: categoria.id });
+
+      await expect(
+        DespesaService.update(org.id, despesa.id, funcionario.id, {
+          categoriaId: exigente.id,
+          beneficiarioId: beneficiario.id,
+        }),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+  });
 });

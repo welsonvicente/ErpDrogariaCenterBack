@@ -59,6 +59,7 @@ export class RegistroService {
         icone: categoria.icone,
         ordem: index,
         exigeBeneficiario: categoria.exigeBeneficiario ?? false,
+        exigeQuantidade: categoria.exigeQuantidade ?? false,
       });
     }
 

@@ -74,6 +74,17 @@ export class Despesa {
   @Column({ name: 'beneficiario_id', nullable: true })
   beneficiarioId!: string | null;
 
+  /**
+   * Quantas unidades foram retiradas — usado hoje pela categoria "Retirada de
+   * vitaminas ou produtos de campanha", onde o `valor` é o total e sozinho não
+   * diz se saíram duas caixas ou vinte.
+   *
+   * Nulo nas categorias que não pedem unidades (ver Categoria.exigeQuantidade) e
+   * nos lançamentos feitos antes desse campo existir.
+   */
+  @Column({ type: 'int', nullable: true })
+  quantidade!: number | null;
+
   @CreateDateColumn({ name: 'criado_em' })
   criadoEm!: Date;
 

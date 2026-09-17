@@ -50,6 +50,18 @@ export class Categoria {
   @Column({ name: 'exige_beneficiario', default: false })
   exigeBeneficiario!: boolean;
 
+  /**
+   * Quando true, lançar uma despesa nessa categoria exige informar quantas
+   * unidades foram retiradas (ver DespesaService.assertQuantidade) — hoje usado
+   * pela categoria "Retirada de vitaminas ou produtos de campanha", onde o valor
+   * total sozinho não diz se saíram duas caixas ou vinte.
+   *
+   * Mesma ideia do `exigeBeneficiario`: uma flag por categoria, pra a próxima
+   * categoria desse tipo não precisar de coluna nova nem de comparar nomes.
+   */
+  @Column({ name: 'exige_quantidade', default: false })
+  exigeQuantidade!: boolean;
+
   @OneToMany(() => Despesa, (despesa) => despesa.categoria)
   despesas!: Despesa[];
 

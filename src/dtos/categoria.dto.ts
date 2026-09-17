@@ -6,6 +6,8 @@ export const criarCategoriaSchema = z.object({
   ordem: z.number().int().nonnegative().default(0),
   /** Lançar um gasto nessa categoria vai exigir escolher quem recebeu o valor — ver Categoria.exigeBeneficiario. */
   exigeBeneficiario: z.boolean().default(false),
+  /** Lançar um gasto nessa categoria vai exigir informar quantas unidades — ver Categoria.exigeQuantidade. */
+  exigeQuantidade: z.boolean().default(false),
 });
 export type CriarCategoriaDTO = z.infer<typeof criarCategoriaSchema>;
 

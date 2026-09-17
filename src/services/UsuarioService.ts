@@ -72,8 +72,12 @@ export class UsuarioService {
    * que traz o cadastro completo e é restrito ao gerente.
    */
   static async listColegas(organizacaoId: string) {
-    const funcionarios = await UsuarioRepository.findFuncionarios(organizacaoId, false);
-    return funcionarios.map((f) => ({ id: f.id, nome: f.nome, icone: f.icone }));
+    // Todos os ativos, não só os de papel FUNCIONARIO: quem recebe uma diária ou
+    // uma retirada de vitaminas é um colega qualquer, e gerentes também trabalham
+    // no balcão. Filtrar por papel deixava essas pessoas de fora do seletor, sem
+    // jeito de lançar o gasto no nome delas.
+    const usuarios = await UsuarioRepository.findTodos(organizacaoId, false);
+    return usuarios.map((u) => ({ id: u.id, nome: u.nome, icone: u.icone }));
   }
 
   static async getById(organizacaoId: string, id: string) {

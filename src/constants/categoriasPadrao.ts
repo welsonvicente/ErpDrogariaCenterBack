@@ -4,7 +4,10 @@
  *
  * `exigeBeneficiario`: quando true, lançar um gasto nessa categoria exige
  * escolher o colaborador que recebeu o valor (ver Categoria.exigeBeneficiario
- * e DespesaService.assertBeneficiario) — hoje só a diária de domingo/feriado.
+ * e DespesaService.assertBeneficiario).
+ *
+ * `exigeQuantidade`: quando true, exige informar quantas unidades saíram (ver
+ * Categoria.exigeQuantidade e DespesaService.assertQuantidade).
  */
 export const CATEGORIAS_PADRAO = [
   { nome: 'Combustível', icone: '⛽' },
@@ -19,6 +22,8 @@ export const CATEGORIAS_PADRAO = [
   { nome: 'Produto avulso e valor', icone: '🏷️' },
   { nome: 'Entregador terceirizado', icone: '🛵' },
   { nome: 'Diária de domingo ou feriado', icone: '📅', exigeBeneficiario: true },
-  { nome: 'Retirada de vitaminas ou produtos de campanha', icone: '💊' },
+  // Retirada de vitaminas: o gasto é sempre N unidades entregues a alguém, então
+  // pede as duas coisas — ver Categoria.exigeQuantidade / exigeBeneficiario.
+  { nome: 'Retirada de vitaminas ou produtos de campanha', icone: '💊', exigeQuantidade: true, exigeBeneficiario: true },
   { nome: 'Outros', icone: '✳️' },
 ];
