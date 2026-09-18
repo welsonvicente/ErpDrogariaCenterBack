@@ -203,4 +203,59 @@ describe('DespesaService', () => {
       ).rejects.toMatchObject({ statusCode: 400 });
     });
   });
+
+  /**
+   * Filtro da coluna "Recebeu" no dashboard: quem RECEBEU o valor, que não é a
+   * mesma pessoa que lançou o gasto — a pergunta é "quem levou as vitaminas",
+   * não "quem digitou o lançamento".
+   */
+  describe('filtro por beneficiário', () => {
+    it('traz só os lançamentos de quem recebeu, mesmo lançados por outra pessoa', async () => {
+      const { org, funcionario, beneficiario, categoria } = await montarCenario({
+        exigeQuantidade: true,
+        exigeBeneficiario: true,
+      });
+      const outro = await criarFuncionario(org.id, { nome: 'Outro', codigo: 'OUT1' });
+      const base = { data: '2026-09-18', valor: 30, formaPagamento: FormaPagamento.DINHEIRO, categoriaId: categoria.id };
+
+      await DespesaService.create(org.id, funcionario.id, { ...base, beneficiarioId: beneficiario.id, quantidade: 5 });
+      await DespesaService.create(org.id, funcionario.id, { ...base, beneficiarioId: outro.id, quantidade: 8 });
+
+      const doBeneficiario = await DespesaService.list(org.id, {
+        beneficiarioId: beneficiario.id,
+        page: 1,
+        pageSize: 50,
+      });
+
+      expect(doBeneficiario.items).toHaveLength(1);
+      expect(doBeneficiario.items[0].beneficiario?.id).toBe(beneficiario.id);
+      expect(doBeneficiario.items[0].quantidade).toBe(5);
+    });
+
+    it('o total do período acompanha o filtro', async () => {
+      const { org, funcionario, beneficiario, categoria } = await montarCenario({ exigeBeneficiario: true });
+      const outro = await criarFuncionario(org.id, { nome: 'Outro', codigo: 'OUT2' });
+      const base = { data: '2026-09-18', formaPagamento: FormaPagamento.DINHEIRO, categoriaId: categoria.id };
+
+      await DespesaService.create(org.id, funcionario.id, { ...base, valor: 30, beneficiarioId: beneficiario.id });
+      await DespesaService.create(org.id, funcionario.id, { ...base, valor: 70, beneficiarioId: outro.id });
+
+      const semFiltro = await DespesaService.list(org.id, { page: 1, pageSize: 50 });
+      const filtrado = await DespesaService.list(org.id, { beneficiarioId: beneficiario.id, page: 1, pageSize: 50 });
+
+      expect(semFiltro.valorTotal).toBe(100);
+      expect(filtrado.valorTotal).toBe(30);
+    });
+
+    it('sem filtro, continua trazendo todos', async () => {
+      const { org, funcionario, beneficiario, categoria } = await montarCenario({ exigeBeneficiario: true });
+      const base = { data: '2026-09-18', valor: 10, formaPagamento: FormaPagamento.DINHEIRO, categoriaId: categoria.id };
+
+      await DespesaService.create(org.id, funcionario.id, { ...base, beneficiarioId: beneficiario.id });
+      await DespesaService.create(org.id, funcionario.id, { ...base, beneficiarioId: beneficiario.id });
+
+      const todos = await DespesaService.list(org.id, { page: 1, pageSize: 50 });
+      expect(todos.items).toHaveLength(2);
+    });
+  });
 });

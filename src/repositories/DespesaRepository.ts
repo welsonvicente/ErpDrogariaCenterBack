@@ -7,6 +7,8 @@ export interface FiltrosDespesa {
   dataFim?: string;
   usuarioId?: string;
   categoriaId?: string;
+  /** Quem RECEBEU o valor (coluna "Recebeu"), diferente de `usuarioId`, que é quem lançou. */
+  beneficiarioId?: string;
 }
 
 export class DespesaRepository {
@@ -34,6 +36,9 @@ export class DespesaRepository {
     }
     if (filtros.categoriaId) {
       qb.andWhere('despesa.categoria_id = :categoriaId', { categoriaId: filtros.categoriaId });
+    }
+    if (filtros.beneficiarioId) {
+      qb.andWhere('despesa.beneficiario_id = :beneficiarioId', { beneficiarioId: filtros.beneficiarioId });
     }
 
     return qb;

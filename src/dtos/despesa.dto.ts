@@ -23,6 +23,8 @@ export const listarDespesasQuerySchema = z.object({
   dataFim: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   usuarioId: z.string().uuid().optional(),
   categoriaId: z.string().uuid().optional(),
+  /** Filtra pela coluna "Recebeu" — quem recebeu o valor, não quem lançou. */
+  beneficiarioId: z.string().uuid().optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(200).default(50),
 });

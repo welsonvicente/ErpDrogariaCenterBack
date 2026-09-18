@@ -62,6 +62,7 @@ export class DespesaService {
       dataFim: query.dataFim,
       usuarioId: query.usuarioId,
       categoriaId: query.categoriaId,
+      beneficiarioId: query.beneficiarioId,
     };
 
     const [pagina, total] = await Promise.all([
@@ -183,7 +184,7 @@ export class DespesaService {
   /** Todas as despesas que batem com o filtro (sem paginação) — usado na exportação Excel/PDF. */
   static async listParaExportacao(
     organizacaoId: string,
-    query: Pick<ListarDespesasQueryDTO, 'dataInicio' | 'dataFim' | 'usuarioId' | 'categoriaId'>,
+    query: Pick<ListarDespesasQueryDTO, 'dataInicio' | 'dataFim' | 'usuarioId' | 'categoriaId' | 'beneficiarioId'>,
   ) {
     const filtros: FiltrosDespesa = { organizacaoId, ...query };
     const despesas = await DespesaRepository.findAll(filtros);
@@ -193,7 +194,7 @@ export class DespesaService {
   /** Estatísticas para os cards/tabela do dashboard do gerente. */
   static async summary(
     organizacaoId: string,
-    query: Pick<ListarDespesasQueryDTO, 'dataInicio' | 'dataFim' | 'usuarioId' | 'categoriaId'>,
+    query: Pick<ListarDespesasQueryDTO, 'dataInicio' | 'dataFim' | 'usuarioId' | 'categoriaId' | 'beneficiarioId'>,
   ) {
     const filtros: FiltrosDespesa = { organizacaoId, ...query };
 
