@@ -74,36 +74,25 @@ export function authenticate(req: AuthenticatedRequest, _res: Response, next: Ne
   }
 }
 
+/** Resultado de `verificarPoderDeGerente` — por que não tem poder de gerente, quando não tem. */
+type MotivoSemPoderDeGerente = 'SEM_PAPEL' | 'PIN_FRACO';
+
 /**
- * Além de autenticar, exige poder de gerente. Usado nas rotas administrativas
- * (gerenciar funcionários/categorias, ver o dashboard completo de despesas).
- * Deve ser encadeado depois de `authenticate`.
+ * O que `requireGerente` checa, extraído pra ser reaproveitado por código que
+ * precisa saber "essa pessoa tem poder de gerente?" sem interromper a
+ * requisição quando a resposta é não (ex.: `ArmazenamentoAppController`, que
+ * atende ADMIN/GERENTE e FUNCIONARIO na mesma rota, cada um vendo uma versão
+ * diferente do dado, em vez de bloquear quem não é gerente).
  *
- * Tem poder de gerente quem é ADMIN/GERENTE, ou quem é FUNCIONARIO com
- * `podeAcessarGestor` concedido. Essa flag já existia, mas só fazia aparecer um
- * atalho pra tela de login no painel do funcionário — não dava acesso nenhum.
- * Agora ela é a permissão de verdade; em troca, conceder a flag passou a exigir
- * credencial mais forte de quem recebe (ver UsuarioService.update).
- *
- * A checagem vai ao banco em vez de confiar no perfil gravado no JWT: assim,
- * revogar a flag (ou inativar a pessoa) tem efeito na hora, em vez de esperar o
- * token vencer em até 12h. Vale só pras rotas de gerente — o resto da API
- * continua confiando no token (ver o item de sessão não-revogável na auditoria).
+ * Sempre consulta o banco (não confia no perfil do JWT) pelo mesmo motivo do
+ * `requireGerente`: revogar tem efeito imediato, não só quando o token vence.
  */
-export const requireGerente = asyncHandler(async (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
-  const usuarioDoToken = req.usuario;
-  if (!usuarioDoToken) {
-    throw AppError.unauthorized('Token de autenticação ausente.');
-  }
-
+export async function verificarPoderDeGerente(
+  usuarioDoToken: NonNullable<AuthenticatedRequest['usuario']>,
+): Promise<{ podeGerenciar: true; perfilAtual: PerfilUsuario } | { podeGerenciar: false; motivo: MotivoSemPoderDeGerente }> {
   const usuario = await UsuarioRepository.findByIdInOrganizacao(usuarioDoToken.organizacaoId, usuarioDoToken.id);
-  if (!usuario || !usuario.ativo) {
-    logger.warn('Acesso de gerente negado: usuário inexistente ou inativo', { usuarioId: usuarioDoToken.id });
-    throw AppError.forbidden('Acesso restrito a administradores e gerentes.');
-  }
-
-  if (usuario.perfil !== PerfilUsuario.ADMIN && usuario.perfil !== PerfilUsuario.GERENTE) {
-    throw AppError.forbidden('Acesso restrito a administradores e gerentes.');
+  if (!usuario || !usuario.ativo || (usuario.perfil !== PerfilUsuario.ADMIN && usuario.perfil !== PerfilUsuario.GERENTE)) {
+    return { podeGerenciar: false, motivo: 'SEM_PAPEL' };
   }
 
   // Tem o papel, mas entrou pela porta rápida do balcão. O PIN de 4 dígitos foi
@@ -115,16 +104,39 @@ export const requireGerente = asyncHandler(async (req: AuthenticatedRequest, _re
   // vale automaticamente pra qualquer gerente ou admin que entre por PIN,
   // inclusive alguém promovido amanhã. Quem entra por senha não passa por aqui.
   if (usuarioDoToken.via === 'pin' && !usuario.pinForte) {
-    // 428 "Precondition Required" diz ao front exatamente qual passo falta, sem
-    // se confundir com "você não tem permissão" (403).
-    throw new AppError('Defina um PIN de acesso ao painel antes de continuar.', 428, {
-      acao: 'DEFINIR_PIN_GESTOR',
-    });
+    return { podeGerenciar: false, motivo: 'PIN_FRACO' };
+  }
+
+  return { podeGerenciar: true, perfilAtual: usuario.perfil };
+}
+
+/**
+ * Além de autenticar, exige poder de gerente. Usado nas rotas administrativas
+ * (gerenciar funcionários/categorias, ver o dashboard completo de despesas).
+ * Deve ser encadeado depois de `authenticate`.
+ */
+export const requireGerente = asyncHandler(async (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
+  const usuarioDoToken = req.usuario;
+  if (!usuarioDoToken) {
+    throw AppError.unauthorized('Token de autenticação ausente.');
+  }
+
+  const resultado = await verificarPoderDeGerente(usuarioDoToken);
+  if (!resultado.podeGerenciar) {
+    if (resultado.motivo === 'PIN_FRACO') {
+      // 428 "Precondition Required" diz ao front exatamente qual passo falta, sem
+      // se confundir com "você não tem permissão" (403).
+      throw new AppError('Defina um PIN de acesso ao painel antes de continuar.', 428, {
+        acao: 'DEFINIR_PIN_GESTOR',
+      });
+    }
+    logger.warn('Acesso de gerente negado: sem papel de gestão ou usuário inativo', { usuarioId: usuarioDoToken.id });
+    throw AppError.forbidden('Acesso restrito a administradores e gerentes.');
   }
 
   // O perfil do banco é a verdade — se alguém foi rebaixado depois do token ser
   // emitido, o resto da requisição enxerga o perfil atual, não o do token.
-  req.usuario = { ...usuarioDoToken, perfil: usuario.perfil };
+  req.usuario = { ...usuarioDoToken, perfil: resultado.perfilAtual };
   next();
 });
 
