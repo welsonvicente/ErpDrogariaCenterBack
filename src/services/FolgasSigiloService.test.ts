@@ -1,4 +1,4 @@
-import { protegerGravacao, redigirEstado, validarFormatoEstado } from './FolgasSigiloService';
+import { protegerGravacao, redigirEstado, validarAlteracaoDeFuncionario, validarFormatoEstado } from './FolgasSigiloService';
 
 function estadoExemplo(overrides: Record<string, unknown> = {}) {
   return JSON.stringify({
@@ -85,6 +85,40 @@ describe('FolgasSigiloService', () => {
 
     it('não derruba a chamada se o valor novo não for JSON válido', () => {
       expect(protegerGravacao(estadoExemplo(), 'isso não é json')).toBe('isso não é json');
+    });
+  });
+
+  describe('validarAlteracaoDeFuncionario', () => {
+    it('rejeita alteração de campos administrativos', () => {
+      const anterior = estadoExemplo({
+        credits: [{ id: 'cred-1', employeeId: 'emp-1', workedDate: '2026-09-06' }],
+      });
+      const adulterado = JSON.parse(anterior);
+      adulterado.credits.push({ id: 'cred-forjado', employeeId: 'emp-1', workedDate: '2026-09-13' });
+
+      expect(validarAlteracaoDeFuncionario(anterior, JSON.stringify(adulterado), 'usuario-1')).toMatch(/administrativo/);
+    });
+
+    it('aceita ausência de listas antigas e a normalização do formato legado de dias bloqueados', () => {
+      const anteriorObj = JSON.parse(estadoExemplo({ blockedWeekdays: [0] }));
+      delete anteriorObj.creditSwaps;
+      delete anteriorObj.auditLog;
+      const novo = {
+        ...anteriorObj,
+        creditSwaps: [],
+        auditLog: [],
+        blockedWeekdays: [{ weekday: 0, by: null, at: null }],
+      };
+
+      expect(validarAlteracaoDeFuncionario(JSON.stringify(anteriorObj), JSON.stringify(novo), 'usuario-1')).toBeNull();
+    });
+
+    it('rejeita quem tenta alterar ou excluir um afastamento existente', () => {
+      const anterior = estadoExemplo();
+      const adulterado = JSON.parse(anterior);
+      adulterado.leaves = adulterado.leaves.filter((l: any) => l.id !== 'leave-1');
+
+      expect(validarAlteracaoDeFuncionario(anterior, JSON.stringify(adulterado), 'usuario-1')).toMatch(/afastamentos existentes/);
     });
   });
 

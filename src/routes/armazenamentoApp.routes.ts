@@ -5,13 +5,11 @@ import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
 
-// Usado pelas ferramentas estáticas (public/tools/*.html) pra persistir estado
-// compartilhado entre gerente e funcionário — só exige login válido, sem
-// restrição de perfil (cada ferramenta decide sozinha o que cada papel pode
-// fazer). Exceção: a chave da ferramenta de Folgas guarda dado sensível
-// (motivo de atestado) dentro desse mesmo blob de acesso amplo — o
-// controller filtra isso sozinho, checando o papel real de quem chamou (ver
-// FolgasSigiloService e authMiddleware.verificarPoderDeGerente).
+// O controller consulta o papel atual no banco em toda chamada. Chaves
+// genéricas são exclusivas de ADMIN/GERENTE; FUNCIONARIO só acessa a chave de
+// Folgas, recebendo os motivos de atestado redigidos e podendo gravar apenas
+// suas próprias folgas/atestados (ver FolgasSigiloService). A autorização não
+// fica a cargo do JavaScript público da ferramenta.
 router.get('/:chave', authenticate, asyncHandler(ArmazenamentoAppController.get));
 router.put('/:chave', authenticate, asyncHandler(ArmazenamentoAppController.set));
 

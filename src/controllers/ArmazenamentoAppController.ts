@@ -1,31 +1,57 @@
 import { Response } from 'express';
 import { AuthenticatedRequest, verificarPoderDeGerente } from '../middlewares/authMiddleware';
 import { chaveArmazenamentoSchema, salvarArmazenamentoSchema } from '../dtos/armazenamentoApp.dto';
+import { PerfilUsuario } from '../models/Usuario';
+import { UsuarioRepository } from '../repositories/UsuarioRepository';
 import { ArmazenamentoAppService } from '../services/ArmazenamentoAppService';
-import { CHAVE_FOLGAS, protegerGravacao, redigirEstado, validarFormatoEstado } from '../services/FolgasSigiloService';
+import {
+  CHAVE_FOLGAS,
+  protegerGravacao,
+  redigirEstado,
+  validarAlteracaoDeFuncionario,
+  validarFormatoEstado,
+} from '../services/FolgasSigiloService';
 import { AppError } from '../utils/AppError';
 
-/**
- * Aplica a ocultação de dado sensível (ver FolgasSigiloService) quando cabível,
- * antes de expor um valor pela API — quem é gerente vê tudo, quem não é vê a
- * versão com o motivo do atestado oculto.
- */
-async function talvezRedigir(valor: string, chave: string, req: AuthenticatedRequest): Promise<string> {
-  if (chave !== CHAVE_FOLGAS) return valor;
+type NivelAcesso = 'gerente' | 'funcionario';
+
+/** Confere o papel atual no banco; token antigo não mantém acesso revogado. */
+async function obterNivelAcesso(req: AuthenticatedRequest): Promise<NivelAcesso> {
   const resultado = await verificarPoderDeGerente(req.usuario!);
-  return resultado.podeGerenciar ? valor : redigirEstado(valor);
+  if (resultado.podeGerenciar) return 'gerente';
+
+  if (resultado.motivo === 'PIN_FRACO') {
+    throw new AppError('Defina um PIN de acesso ao painel antes de continuar.', 428, {
+      acao: 'DEFINIR_PIN_GESTOR',
+    });
+  }
+
+  const usuario = await UsuarioRepository.findByIdInOrganizacao(req.usuario!.organizacaoId, req.usuario!.id);
+  if (!usuario || !usuario.ativo || usuario.perfil !== PerfilUsuario.FUNCIONARIO) {
+    throw AppError.forbidden('Seu usuário não tem acesso a este armazenamento.');
+  }
+  return 'funcionario';
+}
+
+function valorVisivel(valor: string, chave: string, nivel: NivelAcesso): string {
+  return chave === CHAVE_FOLGAS && nivel === 'funcionario' ? redigirEstado(valor) : valor;
 }
 
 export class ArmazenamentoAppController {
   static async get(req: AuthenticatedRequest, res: Response) {
     const chave = chaveArmazenamentoSchema.parse(req.params.chave);
+    const nivel = await obterNivelAcesso(req);
+    if (chave !== CHAVE_FOLGAS && nivel !== 'gerente') {
+      throw AppError.forbidden('Este armazenamento é restrito a administradores e gerentes.');
+    }
+
     const registro = await ArmazenamentoAppService.get(req.usuario!.organizacaoId, chave);
     if (!registro) {
       res.status(200).json({ valor: null, versao: 0 });
       return;
     }
 
-    const valor = await talvezRedigir(registro.valor, chave, req);
+    const valor = valorVisivel(registro.valor, chave, nivel);
     res.status(200).json({ valor, versao: registro.versao });
   }
 
@@ -39,14 +65,24 @@ export class ArmazenamentoAppController {
     const chave = chaveArmazenamentoSchema.parse(req.params.chave);
     const { valor, versaoEsperada } = salvarArmazenamentoSchema.parse(req.body);
     const organizacaoId = req.usuario!.organizacaoId;
+    const nivel = await obterNivelAcesso(req);
+    if (chave !== CHAVE_FOLGAS && nivel !== 'gerente') {
+      throw AppError.forbidden('Este armazenamento é restrito a administradores e gerentes.');
+    }
 
     let valorFinal = valor;
     if (chave === CHAVE_FOLGAS) {
       const registroAtual = await ArmazenamentoAppService.get(organizacaoId, chave);
       const valorAnterior = registroAtual?.valor ?? null;
 
-      const resultado = await verificarPoderDeGerente(req.usuario!);
-      valorFinal = resultado.podeGerenciar ? valor : protegerGravacao(valorAnterior, valor);
+      if (nivel === 'funcionario') {
+        if (versaoEsperada === undefined) {
+          throw new AppError('A versão atual é obrigatória para salvar alterações de Folgas.', 400);
+        }
+        valorFinal = protegerGravacao(valorAnterior, valor);
+        const erroPermissao = validarAlteracaoDeFuncionario(valorAnterior, valorFinal, req.usuario!.id);
+        if (erroPermissao) throw AppError.forbidden(erroPermissao);
+      }
 
       // Barra aqui um formato claramente quebrado (ex.: `employees` virando
       // uma string por bug no cliente) — sem isso, um valor assim ficaria
@@ -69,7 +105,7 @@ export class ArmazenamentoAppController {
       const atual = resultado.registro;
       res.status(409).json({
         message: 'Alguém mais salvou uma alteração aqui enquanto você editava.',
-        valor: atual ? await talvezRedigir(atual.valor, chave, req) : null,
+        valor: atual ? valorVisivel(atual.valor, chave, nivel) : null,
         versao: atual?.versao ?? 0,
       });
       return;
