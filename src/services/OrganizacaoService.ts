@@ -4,6 +4,11 @@ import { OrganizacaoRepository } from '../repositories/OrganizacaoRepository';
 import { AppError } from '../utils/AppError';
 
 export class OrganizacaoService {
+  static async getAtivaPorSlug(slug: string) {
+    const organizacao = await OrganizacaoRepository.findBySlug(slug);
+    return organizacao?.ativo ? organizacao : null;
+  }
+
   static async getById(id: string) {
     const organizacao = await OrganizacaoRepository.findById(id);
     if (!organizacao) throw AppError.notFound('Organização', id);

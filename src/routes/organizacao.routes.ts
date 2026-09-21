@@ -5,6 +5,9 @@ import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
 
+// Única informação pública: se o endereço pode abrir uma porta de acesso.
+// Não devolve nome, ID ou qualquer dado da organização.
+router.get('/:slug/entrada', asyncHandler(OrganizacaoController.entradaDisponivel));
 router.get('/', authenticate, asyncHandler(OrganizacaoController.getAtual));
 // Dados da organização afetam todo mundo dentro dela — restrito ao ADMIN.
 router.put('/', authenticate, requireAdmin, asyncHandler(OrganizacaoController.atualizar));
