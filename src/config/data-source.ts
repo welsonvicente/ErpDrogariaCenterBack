@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { env, isProduction, isTest } from './env';
 import { ArmazenamentoApp } from '../models/ArmazenamentoApp';
+import { ArquivoImportado } from '../models/ArquivoImportado';
 import { Categoria } from '../models/Categoria';
 import { Despesa } from '../models/Despesa';
 import { Organizacao } from '../models/Organizacao';
@@ -29,6 +30,6 @@ export const AppDataSource = new DataSource({
   // silenciar aqui, a saída dos testes fica cheia de "erros" que na
   // verdade são o comportamento correto sendo testado.
   logging: isTest ? false : isProduction ? ['error', 'warn'] : ['error', 'warn', 'schema'],
-  entities: [Organizacao, Usuario, Categoria, Despesa, ArmazenamentoApp, RegistroAuditoria],
+  entities: [Organizacao, Usuario, Categoria, Despesa, ArmazenamentoApp, RegistroAuditoria, ArquivoImportado],
   migrations: [__dirname + '/../migrations/*.{ts,js}'],
 });

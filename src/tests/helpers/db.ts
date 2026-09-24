@@ -13,6 +13,7 @@ export async function resetDb() {
       usuarios,
       armazenamento_app,
       registros_auditoria,
+      arquivos_importados,
       organizacoes
     RESTART IDENTITY CASCADE
   `);

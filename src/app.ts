@@ -38,7 +38,12 @@ export function createApp() {
       },
     }),
   );
-  app.use(express.json());
+  // Limite padrão do Express (100kb) é pequeno demais pra "Importar planilha"
+  // mandar o arquivo original em base64 no corpo da requisição (não há upload
+  // multipart nesse backend). Base64 pesa ~33% a mais que o arquivo original
+  // (limite de 8MB em arquivoImportado.dto.ts), então o limite aqui precisa
+  // de folga sobre isso, não ser igual.
+  app.use(express.json({ limit: '12mb' }));
   app.use(requestLogger);
 
   app.use('/api', routes);
