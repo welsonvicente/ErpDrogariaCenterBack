@@ -38,6 +38,7 @@ router.delete('/projetos/:id', authenticate, asyncHandler(ProjetoCartazControlle
 router.post('/imagens/presign', authenticate, asyncHandler(ArquivoCartazController.presign));
 router.post('/imagens/urls', authenticate, asyncHandler(ArquivoCartazController.obterUrls));
 router.post('/imagens/:id/confirmar', authenticate, asyncHandler(ArquivoCartazController.confirmar));
+router.post('/imagens/:id/duplicar', authenticate, asyncHandler(ArquivoCartazController.duplicar));
 router.delete('/imagens/:id', authenticate, asyncHandler(ArquivoCartazController.remover));
 
 export default router;

@@ -1,4 +1,4 @@
-import { apagarObjetos, chaveObjeto, gerarUrlDownload, gerarUrlUpload, verificarObjetoEnviado } from '../config/r2Client';
+import { apagarObjetos, chaveObjeto, copiarObjeto, gerarUrlDownload, gerarUrlUpload, verificarObjetoEnviado } from '../config/r2Client';
 import { ArquivoCartaz, StatusArquivoCartaz } from '../models/ArquivoCartaz';
 import { ArquivoCartazRepository } from '../repositories/ArquivoCartazRepository';
 import { ProjetoCartazRepository } from '../repositories/ProjetoCartazRepository';
@@ -83,6 +83,43 @@ export class ArquivoCartazService {
     return Promise.all(
       arquivos.map(async (arquivo) => ({ id: arquivo.id, url: await ArquivoCartazService.obterUrlLeitura(arquivo) })),
     );
+  }
+
+  /**
+   * Copia um arquivo já confirmado (de qualquer projeto, inclusive sem
+   * nenhum) pra um NOVO arquivo, vinculado ao projeto de destino — usada
+   * quando "produtos recentes" (Story/Panfleto) reaproveita uma foto num
+   * projeto diferente de onde ela foi enviada. Um `ArquivoCartaz` só
+   * pertence a um projeto por vez; sem essa cópia, reaproveitar a mesma
+   * referência faria o projeto de origem "perder" a foto assim que o de
+   * destino a vinculasse a si (ver `ArquivoCartaz.projetoId`).
+   */
+  static async duplicarParaProjeto(arquivoOrigemId: string, organizacaoId: string, usuarioId: string, projetoDestinoId: string) {
+    const origem = await ArquivoCartazRepository.findByIdEOrganizacao(arquivoOrigemId, organizacaoId);
+    if (!origem || origem.status !== StatusArquivoCartaz.CONFIRMADO) throw AppError.notFound('Arquivo', arquivoOrigemId);
+
+    const projeto = await ProjetoCartazRepository.findByIdEOrganizacao(projetoDestinoId, organizacaoId);
+    if (!projeto) throw AppError.notFound('Projeto', projetoDestinoId);
+
+    const novoArquivo = await ArquivoCartazRepository.criar({
+      organizacaoId,
+      criadoPorId: usuarioId,
+      mimeType: origem.mimeType,
+      tamanhoBytes: origem.tamanhoBytes,
+    });
+
+    await copiarObjeto(chaveObjeto(organizacaoId, origem.id), chaveObjeto(organizacaoId, novoArquivo.id));
+
+    novoArquivo.projetoId = projetoDestinoId;
+    novoArquivo.status = StatusArquivoCartaz.CONFIRMADO;
+    await ArquivoCartazRepository.salvar(novoArquivo);
+
+    return {
+      id: novoArquivo.id,
+      mimeType: novoArquivo.mimeType,
+      tamanhoBytes: novoArquivo.tamanhoBytes,
+      url: await ArquivoCartazService.obterUrlLeitura(novoArquivo),
+    };
   }
 
   static async remover(id: string, organizacaoId: string) {

@@ -41,3 +41,9 @@ export const obterUrlsArquivosSchema = z.object({
   ids: z.array(z.string().uuid()).min(1).max(50),
 });
 export type ObterUrlsArquivosDTO = z.infer<typeof obterUrlsArquivosSchema>;
+
+/** Corpo de `POST /cartazes/imagens/:id/duplicar` — pra qual projeto a cópia vai pertencer (ver "produtos recentes"). */
+export const duplicarArquivoSchema = z.object({
+  projetoId: z.string().uuid('Id de projeto inválido.'),
+});
+export type DuplicarArquivoDTO = z.infer<typeof duplicarArquivoSchema>;

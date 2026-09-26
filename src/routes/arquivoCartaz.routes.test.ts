@@ -10,6 +10,7 @@ jest.mock('../config/r2Client', () => ({
   gerarUrlDownload: jest.fn(async (key: string) => `https://fake-r2.example.com/${key}?download=1`),
   verificarObjetoEnviado: jest.fn(async () => ({ tamanhoBytes: 245678 })),
   apagarObjetos: jest.fn(async () => undefined),
+  copiarObjeto: jest.fn(async () => undefined),
 }));
 
 const verificarObjetoEnviadoMock = verificarObjetoEnviado as jest.Mock;
@@ -241,6 +242,96 @@ describe('/api/cartazes/imagens', () => {
     expect(res.body).toHaveLength(1);
     expect(res.body[0].id).toBe(presignA.body.arquivoId);
     expect(res.body[0].url).toContain('download=1');
+  });
+
+  it('duplica um arquivo confirmado sem projeto (caso de "produtos recentes") pra um projeto novo — sem afetar o original', async () => {
+    const { token } = await autenticar();
+    const presign = await request(app)
+      .post('/api/cartazes/imagens/presign')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ mimeType: 'image/jpeg', tamanhoBytes: 100_000 });
+    await request(app).post(`/api/cartazes/imagens/${presign.body.arquivoId}/confirmar`).set('Authorization', `Bearer ${token}`).send({});
+
+    const projetoId = await criarProjeto(token, 'panfleto', 'Panfleto que reaproveita recente');
+    const duplicado = await request(app)
+      .post(`/api/cartazes/imagens/${presign.body.arquivoId}/duplicar`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ projetoId });
+
+    expect(duplicado.status).toBe(201);
+    expect(duplicado.body.id).not.toBe(presign.body.arquivoId);
+    expect(duplicado.body.url).toContain('download=1');
+
+    const projeto = await request(app).get(`/api/cartazes/projetos/${projetoId}`).set('Authorization', `Bearer ${token}`);
+    expect(projeto.body.arquivos).toHaveLength(1);
+    expect(projeto.body.arquivos[0].id).toBe(duplicado.body.id);
+  });
+
+  it('duplicar um arquivo já vinculado a OUTRO projeto não tira a foto do projeto original', async () => {
+    const { token } = await autenticar();
+    const projetoOrigemId = await criarProjeto(token, 'story', 'Story original');
+    const presign = await request(app)
+      .post('/api/cartazes/imagens/presign')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ projetoId: projetoOrigemId, mimeType: 'image/jpeg', tamanhoBytes: 100_000 });
+    await request(app)
+      .post(`/api/cartazes/imagens/${presign.body.arquivoId}/confirmar`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ projetoId: projetoOrigemId });
+
+    const projetoDestinoId = await criarProjeto(token, 'panfleto', 'Panfleto que reaproveita');
+    const duplicado = await request(app)
+      .post(`/api/cartazes/imagens/${presign.body.arquivoId}/duplicar`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ projetoId: projetoDestinoId });
+    expect(duplicado.status).toBe(201);
+
+    const origem = await request(app).get(`/api/cartazes/projetos/${projetoOrigemId}`).set('Authorization', `Bearer ${token}`);
+    expect(origem.body.arquivos).toHaveLength(1);
+    expect(origem.body.arquivos[0].id).toBe(presign.body.arquivoId);
+
+    const destino = await request(app).get(`/api/cartazes/projetos/${projetoDestinoId}`).set('Authorization', `Bearer ${token}`);
+    expect(destino.body.arquivos).toHaveLength(1);
+    expect(destino.body.arquivos[0].id).toBe(duplicado.body.id);
+  });
+
+  it('recusa duplicar um arquivo que ainda não foi confirmado', async () => {
+    const { token } = await autenticar();
+    const projetoId = await criarProjeto(token);
+    const presign = await request(app)
+      .post('/api/cartazes/imagens/presign')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ mimeType: 'image/jpeg', tamanhoBytes: 100_000 });
+
+    const res = await request(app)
+      .post(`/api/cartazes/imagens/${presign.body.arquivoId}/duplicar`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ projetoId });
+    expect(res.status).toBe(404);
+  });
+
+  it('não deixa uma organização duplicar arquivo de outra, nem duplicar pra projeto de outra', async () => {
+    const { token: tokenA } = await autenticar();
+    const { token: tokenB } = await autenticar();
+
+    const presignA = await request(app)
+      .post('/api/cartazes/imagens/presign')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ mimeType: 'image/jpeg', tamanhoBytes: 100_000 });
+    await request(app).post(`/api/cartazes/imagens/${presignA.body.arquivoId}/confirmar`).set('Authorization', `Bearer ${tokenA}`).send({});
+    const projetoB = await criarProjeto(tokenB);
+
+    const duplicarArquivoDeOutraOrg = await request(app)
+      .post(`/api/cartazes/imagens/${presignA.body.arquivoId}/duplicar`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({ projetoId: projetoB });
+    expect(duplicarArquivoDeOutraOrg.status).toBe(404);
+
+    const duplicarProOutraOrg = await request(app)
+      .post(`/api/cartazes/imagens/${presignA.body.arquivoId}/duplicar`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ projetoId: projetoB });
+    expect(duplicarProOutraOrg.status).toBe(404);
   });
 
   it('rejeita sem estar autenticado', async () => {

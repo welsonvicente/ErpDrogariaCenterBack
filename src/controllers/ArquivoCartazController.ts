@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
-import { arquivoIdSchema, confirmarArquivoSchema, obterUrlsArquivosSchema, presignArquivoSchema } from '../dtos/arquivoCartaz.dto';
+import { arquivoIdSchema, confirmarArquivoSchema, duplicarArquivoSchema, obterUrlsArquivosSchema, presignArquivoSchema } from '../dtos/arquivoCartaz.dto';
 import { ArquivoCartazService } from '../services/ArquivoCartazService';
 
 export class ArquivoCartazController {
@@ -27,5 +27,12 @@ export class ArquivoCartazController {
     const { ids } = obterUrlsArquivosSchema.parse(req.body);
     const resultado = await ArquivoCartazService.obterUrlsPorIds(ids, req.usuario!.organizacaoId);
     res.status(200).json(resultado);
+  }
+
+  static async duplicar(req: AuthenticatedRequest, res: Response) {
+    const id = arquivoIdSchema.parse(req.params.id);
+    const { projetoId } = duplicarArquivoSchema.parse(req.body);
+    const resultado = await ArquivoCartazService.duplicarParaProjeto(id, req.usuario!.organizacaoId, req.usuario!.id, projetoId);
+    res.status(201).json(resultado);
   }
 }

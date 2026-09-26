@@ -1,4 +1,4 @@
-import { DeleteObjectsCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, DeleteObjectsCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AppError } from '../utils/AppError';
 import { env } from './env';
@@ -78,6 +78,26 @@ export async function verificarObjetoEnviado(key: string): Promise<{ tamanhoByte
     if (nome === 'NotFound' || nome === 'NoSuchKey' || status === 404) return null;
     throw erro;
   }
+}
+
+/**
+ * Copia um objeto já existente pra uma key nova, direto no R2 (server-side —
+ * o backend nunca baixa nem reenvia os bytes). Usada quando uma foto de
+ * "produtos recentes" é reaproveitada num projeto diferente de onde foi
+ * enviada originalmente: um arquivo só pertence a UM projeto por vez (ver
+ * `ArquivoCartaz.projetoId`), então reaproveitar a mesma key faria o projeto
+ * de origem perder a foto assim que o de destino a "roubasse".
+ */
+export async function copiarObjeto(keyOrigem: string, keyDestino: string): Promise<void> {
+  const client = clienteR2();
+  const bucket = bucketR2();
+  await client.send(
+    new CopyObjectCommand({
+      Bucket: bucket,
+      Key: keyDestino,
+      CopySource: `${bucket}/${keyOrigem}`,
+    }),
+  );
 }
 
 /** Apaga em lotes de 1000 (limite do `DeleteObjects` do S3) — sem erro se alguma key já não existir (delete é idempotente). */

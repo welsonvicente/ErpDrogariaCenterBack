@@ -11,6 +11,7 @@ jest.mock('../config/r2Client', () => ({
   gerarUrlDownload: jest.fn(async (key: string) => `https://fake-r2.example.com/${key}?download=1`),
   verificarObjetoEnviado: jest.fn(async () => ({ tamanhoBytes: 1000 })),
   apagarObjetos: jest.fn(async () => undefined),
+  copiarObjeto: jest.fn(async () => undefined),
 }));
 
 describe('/api/cartazes/projetos', () => {
