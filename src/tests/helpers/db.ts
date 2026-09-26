@@ -14,6 +14,8 @@ export async function resetDb() {
       armazenamento_app,
       registros_auditoria,
       arquivos_importados,
+      arquivos_cartaz,
+      projetos_cartaz,
       organizacoes
     RESTART IDENTITY CASCADE
   `);

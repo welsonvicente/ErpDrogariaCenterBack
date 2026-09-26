@@ -45,6 +45,21 @@ export const env = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
 
   /**
+   * Cloudflare R2 (S3-compatible) — storage das imagens dos projetos de
+   * Cartazes (Story/Panfleto/Importar planilha). Opcional aqui (não usa
+   * `requireEnv`) pra não travar `npm run dev`/testes em quem ainda não
+   * configurou um bucket; `R2Client` (config/r2Client.ts) é quem recusa a
+   * operação com um erro claro se essas variáveis não estiverem definidas
+   * quando de fato precisar subir/baixar um arquivo.
+   */
+  r2: {
+    accountId: process.env.R2_ACCOUNT_ID || null,
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || null,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || null,
+    bucket: process.env.R2_BUCKET || null,
+  },
+
+  /**
    * Origens do front autorizadas a chamar a API (CORS). Lista separada por
    * vírgula em CORS_ORIGINS; sem essa variável, cai nos endereços de
    * desenvolvimento local (localhost e rede local na porta padrão do Vite).

@@ -3,6 +3,7 @@ import { createApp } from './app';
 import { AppDataSource } from './config/data-source';
 import { env } from './config/env';
 import { logger } from './config/logger';
+import { iniciarJobLimpezaArquivosCartaz } from './jobs/limpezaArquivosCartazJob';
 
 /**
  * Ponto de entrada do processo: conecta ao banco e só então sobe o HTTP.
@@ -19,6 +20,8 @@ async function bootstrap() {
     logger.error('Falha ao conectar no banco de dados. Encerrando processo.', { error });
     process.exit(1);
   }
+
+  iniciarJobLimpezaArquivosCartaz();
 
   const app = createApp();
 
