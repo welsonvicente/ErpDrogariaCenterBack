@@ -16,6 +16,7 @@ export async function resetDb() {
       arquivos_importados,
       arquivos_cartaz,
       projetos_cartaz,
+      preferencias_cartaz,
       organizacoes
     RESTART IDENTITY CASCADE
   `);

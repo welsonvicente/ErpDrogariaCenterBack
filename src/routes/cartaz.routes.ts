@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ArquivoCartazController } from '../controllers/ArquivoCartazController';
 import { ArquivoImportadoController } from '../controllers/ArquivoImportadoController';
 import { CartazController } from '../controllers/CartazController';
+import { PreferenciaCartazController } from '../controllers/PreferenciaCartazController';
 import { ProjetoCartazController } from '../controllers/ProjetoCartazController';
 import { authenticate } from '../middlewares/authMiddleware';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -35,6 +36,11 @@ router.delete('/projetos/:id', authenticate, asyncHandler(ProjetoCartazControlle
 // não colidir com as rotas de planilha original acima. Os bytes vão direto
 // do front pro Cloudflare R2 com a URL assinada devolvida aqui; o backend só
 // gera a URL e confirma metadados (ver ArquivoCartazService/config/r2Client).
+// Preferências "padrão" (cores, letras, tamanhos, posições) — por organização,
+// pra valer em qualquer navegador/aparelho, não só no localStorage de um.
+router.get('/preferencias', authenticate, asyncHandler(PreferenciaCartazController.listar));
+router.put('/preferencias/:chave', authenticate, asyncHandler(PreferenciaCartazController.salvar));
+
 router.post('/imagens/presign', authenticate, asyncHandler(ArquivoCartazController.presign));
 router.post('/imagens/urls', authenticate, asyncHandler(ArquivoCartazController.obterUrls));
 router.post('/imagens/:id/confirmar', authenticate, asyncHandler(ArquivoCartazController.confirmar));

@@ -7,6 +7,7 @@ import { ArquivoImportado } from '../models/ArquivoImportado';
 import { Categoria } from '../models/Categoria';
 import { Despesa } from '../models/Despesa';
 import { Organizacao } from '../models/Organizacao';
+import { PreferenciaCartaz } from '../models/PreferenciaCartaz';
 import { ProjetoCartaz } from '../models/ProjetoCartaz';
 import { RegistroAuditoria } from '../models/RegistroAuditoria';
 import { Usuario } from '../models/Usuario';
@@ -32,6 +33,6 @@ export const AppDataSource = new DataSource({
   // silenciar aqui, a saída dos testes fica cheia de "erros" que na
   // verdade são o comportamento correto sendo testado.
   logging: isTest ? false : isProduction ? ['error', 'warn'] : ['error', 'warn', 'schema'],
-  entities: [Organizacao, Usuario, Categoria, Despesa, ArmazenamentoApp, RegistroAuditoria, ArquivoImportado, ProjetoCartaz, ArquivoCartaz],
+  entities: [Organizacao, Usuario, Categoria, Despesa, ArmazenamentoApp, RegistroAuditoria, ArquivoImportado, ProjetoCartaz, ArquivoCartaz, PreferenciaCartaz],
   migrations: [__dirname + '/../migrations/*.{ts,js}'],
 });
