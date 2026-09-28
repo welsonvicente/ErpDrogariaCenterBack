@@ -64,7 +64,8 @@ describe('Acesso ao Painel do Gerente por funcionário', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ pinAtual: '0000', novoPin: '654321' });
 
-    expect(res.status).toBe(401);
+    // 403, não 401: o front trata 401 como sessão expirada e deslogaria quem só errou o PIN.
+    expect(res.status).toBe(403);
     expect((await rotaDeGestor(token)).status).toBe(428); // segue pendente
   });
 

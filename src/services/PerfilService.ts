@@ -67,7 +67,7 @@ export class PerfilService {
     const pinConfere = await bcrypt.compare(pinAtual, usuario.pinHash);
     if (!pinConfere) {
       logger.warn('Tentativa de definir PIN de gerente com PIN atual incorreto', { usuarioId: id });
-      throw AppError.unauthorized('PIN atual incorreto.');
+      throw AppError.forbidden('PIN atual incorreto.');
     }
 
     if (await bcrypt.compare(novoPin, usuario.pinHash)) {
@@ -89,7 +89,7 @@ export class PerfilService {
     const senhaConfere = await bcrypt.compare(senhaAtual, usuario.senhaHash);
     if (!senhaConfere) {
       logger.warn('Tentativa de troca de senha com senha atual incorreta', { usuarioId: id });
-      throw AppError.unauthorized('Senha atual incorreta.');
+      throw AppError.forbidden('Senha atual incorreta.');
     }
 
     const novoHash = await bcrypt.hash(novaSenha, SALT_ROUNDS);
