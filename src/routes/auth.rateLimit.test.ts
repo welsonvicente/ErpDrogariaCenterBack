@@ -1,58 +1,33 @@
 import request from 'supertest';
 import { createApp } from '../app';
-import { _resetLoginRateLimit } from '../middlewares/rateLimitMiddleware';
 import { resetDb } from '../tests/helpers/db';
 import { criarFuncionario, criarOrganizacao } from '../tests/helpers/factory';
 
 /**
- * Isolado no próprio arquivo de propósito: `loginRateLimiter` (ver
- * rateLimitMiddleware.ts) é criado uma única vez no carregamento do módulo de
- * rotas, então qualquer outro teste que bata em /auth/* no MESMO arquivo
- * compartilharia o mesmo contador — o Jest só reseta o registro de módulos entre
- * arquivos, não entre testes de um mesmo arquivo. Por isso o reset no beforeEach.
- *
- * Hoje a única proteção é o limite por IP: 10 chamadas por janela. Houve também
- * um bloqueio por conta (5 erros na mesma conta), removido a pedido — sem ele,
- * quem troca de IP não é contido, e o balcão inteiro atrás de um NAT divide a
- * mesma cota.
+ * O login não tem limite de tentativas, por decisão do dono (17/10/2026): o
+ * limite por IP travou a loja inteira, que sai toda pelo mesmo IP. Estes testes
+ * garantem que nenhum bloqueio volte sem querer.
  */
-describe('Rate limit em POST /api/auth/funcionario-login', () => {
+describe('POST /api/auth/funcionario-login — sem bloqueio por tentativas', () => {
   beforeEach(async () => {
     await resetDb();
-    await _resetLoginRateLimit();
   });
 
-  it('permite 10 tentativas por IP e bloqueia a 11ª com 429', async () => {
+  it('muitos erros seguidos nunca viram 429, e o PIN certo entra em seguida', async () => {
     const app = createApp();
-    const org = await criarOrganizacao({ slug: 'farmacia-rate-limit' });
-    await criarFuncionario(org.id, { codigo: '1' });
-
-    const tentar = () =>
-      request(app)
-        .post('/api/auth/funcionario-login')
-        .send({ organizacaoSlug: 'farmacia-rate-limit', codigo: '1', pin: '0000' });
-
-    for (let i = 0; i < 10; i++) {
-      expect((await tentar()).status).toBe(401); // PIN errado, mas dentro do limite
-    }
-
-    expect((await tentar()).status).toBe(429);
-  });
-
-  it('errar o PIN não tranca a conta — o PIN certo entra em seguida', async () => {
-    const app = createApp();
-    const org = await criarOrganizacao({ slug: 'farmacia-sem-bloqueio' });
+    const org = await criarOrganizacao({ slug: 'farmacia-sem-limite' });
     await criarFuncionario(org.id, { codigo: '7' });
 
-    for (let i = 0; i < 5; i++) {
-      await request(app)
+    for (let i = 0; i < 30; i++) {
+      const res = await request(app)
         .post('/api/auth/funcionario-login')
-        .send({ organizacaoSlug: 'farmacia-sem-bloqueio', codigo: '7', pin: '0000' });
+        .send({ organizacaoSlug: 'farmacia-sem-limite', codigo: '7', pin: '0000' });
+      expect(res.status).toBe(401);
     }
 
     const comPinCerto = await request(app)
       .post('/api/auth/funcionario-login')
-      .send({ organizacaoSlug: 'farmacia-sem-bloqueio', codigo: '7', pin: '1234' });
+      .send({ organizacaoSlug: 'farmacia-sem-limite', codigo: '7', pin: '1234' });
     expect(comPinCerto.status).toBe(200);
   });
 });

@@ -1,7 +1,6 @@
 import request from 'supertest';
 import { createApp } from '../app';
 import { PerfilUsuario } from '../models/Usuario';
-import { _resetLoginRateLimit } from '../middlewares/rateLimitMiddleware';
 import { resetDb } from '../tests/helpers/db';
 import { criarFuncionario, criarOrganizacao, criarAdmin, gerarToken } from '../tests/helpers/factory';
 
@@ -17,7 +16,6 @@ describe('ADMIN x GERENTE', () => {
 
   beforeEach(async () => {
     await resetDb();
-    await _resetLoginRateLimit();
   });
 
   async function cenario() {

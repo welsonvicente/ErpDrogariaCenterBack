@@ -152,6 +152,7 @@ describe('/api/armazenamento/:chave — autorização por papel', () => {
       employeeId: 'emp-proprio',
       date: dataFutura(10),
       createdAt: new Date().toISOString(),
+      status: 'pendente', // pedido de funcionário sempre aguarda a gerência
     });
     alterado.leaves.push({
       id: 'leave-novo',

@@ -2,7 +2,7 @@ import request from 'supertest';
 import { createApp } from '../app';
 import { AppDataSource } from '../config/data-source';
 import { PerfilUsuario, Usuario } from '../models/Usuario';
-import { _resetLoginRateLimit, _resetPinGestorRateLimit } from '../middlewares/rateLimitMiddleware';
+import { _resetPinGestorRateLimit } from '../middlewares/rateLimitMiddleware';
 import { resetDb } from '../tests/helpers/db';
 import { criarAdmin, criarFuncionario, criarOrganizacao, gerarToken } from '../tests/helpers/factory';
 
@@ -19,7 +19,6 @@ describe('Acesso ao Painel do Gerente por funcionário', () => {
 
   beforeEach(async () => {
     await resetDb();
-    await _resetLoginRateLimit();
     await _resetPinGestorRateLimit();
   });
 
