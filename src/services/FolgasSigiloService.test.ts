@@ -113,6 +113,58 @@ describe('FolgasSigiloService', () => {
       expect(validarAlteracaoDeFuncionario(JSON.stringify(anteriorObj), JSON.stringify(novo), 'usuario-1')).toBeNull();
     });
 
+    describe('pedido e cancelamento de folga', () => {
+      // Datas relativas a hoje (fuso de São Paulo, o mesmo da validação).
+      function diaRelativo(dias: number) {
+        const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+        const data = new Date(`${hoje}T12:00:00Z`);
+        data.setUTCDate(data.getUTCDate() + dias);
+        return data.toISOString().slice(0, 10);
+      }
+      const credito = { id: 'cred-1', employeeId: 'emp-1', workedDate: '2026-09-06' };
+      const comFolga = (folga: Record<string, unknown>) =>
+        estadoExemplo({ leaves: [], credits: [credito], daysOff: [{ id: 'off-1', employeeId: 'emp-1', createdAt: '2026-10-01T10:00:00Z', ...folga }] });
+      const semFolgas = (folgas: unknown[]) => {
+        const obj = JSON.parse(estadoExemplo({ leaves: [], credits: [credito] }));
+        obj.daysOff = folgas;
+        return JSON.stringify(obj);
+      };
+
+      it('aceita um pedido novo pendente', () => {
+        const anterior = semFolgas([]);
+        const novo = semFolgas([{ id: 'off-1', employeeId: 'emp-1', date: diaRelativo(3), createdAt: new Date().toISOString(), status: 'pendente' }]);
+        expect(validarAlteracaoDeFuncionario(anterior, novo, 'usuario-1')).toBeNull();
+      });
+
+      it('rejeita funcionário que tenta se autoaprovar', () => {
+        const anterior = semFolgas([]);
+        const novo = semFolgas([{ id: 'off-1', employeeId: 'emp-1', date: diaRelativo(3), createdAt: new Date().toISOString(), status: 'aprovada' }]);
+        expect(validarAlteracaoDeFuncionario(anterior, novo, 'usuario-1')).toMatch(/aprovação da gerência/);
+      });
+
+      it('rejeita funcionário que tenta mudar a decisão de um pedido', () => {
+        const anterior = comFolga({ date: diaRelativo(3), status: 'pendente' });
+        const novo = comFolga({ date: diaRelativo(3), status: 'aprovada' });
+        expect(validarAlteracaoDeFuncionario(anterior, novo, 'usuario-1')).toMatch(/não pode ser alterada/);
+      });
+
+      it('permite cancelar até a véspera', () => {
+        expect(validarAlteracaoDeFuncionario(comFolga({ date: diaRelativo(1), status: 'aprovada' }), semFolgas([]), 'usuario-1')).toBeNull();
+      });
+
+      it.each([['no próprio dia', 0], ['depois do dia', -1]])('não permite cancelar %s', (_rotulo, dias) => {
+        const anterior = comFolga({ date: diaRelativo(dias as number), status: 'aprovada' });
+        expect(validarAlteracaoDeFuncionario(anterior, semFolgas([]), 'usuario-1')).toMatch(/até o dia anterior/);
+      });
+
+      it('folga recusada não ocupa a data nem consome o saldo', () => {
+        const recusada = { id: 'off-1', employeeId: 'emp-1', date: diaRelativo(3), createdAt: '2026-10-01T10:00:00Z', status: 'recusada' };
+        const anterior = semFolgas([recusada]);
+        const novo = semFolgas([recusada, { id: 'off-2', employeeId: 'emp-1', date: diaRelativo(3), createdAt: new Date().toISOString(), status: 'pendente' }]);
+        expect(validarAlteracaoDeFuncionario(anterior, novo, 'usuario-1')).toBeNull();
+      });
+    });
+
     it('rejeita quem tenta alterar ou excluir um afastamento existente', () => {
       const anterior = estadoExemplo();
       const adulterado = JSON.parse(anterior);

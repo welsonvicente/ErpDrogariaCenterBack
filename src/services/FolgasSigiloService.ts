@@ -75,6 +75,11 @@ function diaDaSemana(dataIso: string): number {
   return new Date(`${dataIso}T12:00:00Z`).getUTCDay();
 }
 
+/** Recusada não ocupa a data nem consome crédito. Sem `status` = folga anterior à aprovação, vale como aprovada. */
+function folgaAtiva(folga: any): boolean {
+  return folga?.status !== 'recusada';
+}
+
 function valorAdministrativoComparavel(estado: any, chave: string): unknown {
   // Versões antigas do blob podem não ter as listas acrescentadas depois; o
   // cliente estático completa essas ausências com [] ao carregar. Isso não é
@@ -134,7 +139,8 @@ export function protegerGravacao(valorAnteriorJson: string | null, valorNovoJson
 
 /**
  * Autoriza somente as duas operações que pertencem ao painel do funcionário:
- *  - adicionar/cancelar uma folga própria;
+ *  - pedir uma folga própria (sempre `pendente`, quem aprova é a gerência) ou
+ *    cancelar uma folga própria até a véspera;
  *  - registrar um atestado próprio (atestados existentes não podem ser
  *    alterados nem excluídos pelo funcionário).
  *
@@ -179,6 +185,10 @@ export function validarAlteracaoDeFuncionario(
     const correspondente = folgasNovasPorId.get(folgaAnterior.id);
     if (!correspondente) {
       if (folgaAnterior.employeeId !== colaborador.id) return 'Você só pode cancelar uma folga própria.';
+      // Cancelar só até a véspera: no dia (ou depois) a folga já foi tirada.
+      if (!dataIsoValida(folgaAnterior.date) || folgaAnterior.date <= hojeEmSaoPaulo()) {
+        return 'A folga só pode ser cancelada até o dia anterior.';
+      }
       continue;
     }
     if (!objetosIguais(folgaAnterior, correspondente)) return 'Uma folga existente não pode ser alterada.';
@@ -189,6 +199,10 @@ export function validarAlteracaoDeFuncionario(
     if (folga.employeeId !== colaborador.id) return 'Você só pode agendar uma folga para si mesmo.';
     if (!dataIsoValida(folga.date) || folga.date <= hojeEmSaoPaulo()) return 'A nova folga precisa ser agendada para uma data futura válida.';
     if (typeof folga.createdAt !== 'string' || Number.isNaN(Date.parse(folga.createdAt))) return 'A nova folga não tem uma data de criação válida.';
+    // Quem decide é a gerência — o pedido do funcionário sempre nasce pendente.
+    if (folga.status !== 'pendente' || folga.decididoPor !== undefined || folga.decididoEm !== undefined) {
+      return 'O pedido de folga precisa aguardar a aprovação da gerência.';
+    }
 
     const bloqueada = lista(anterior, 'blockedDates').some((b: any) => b?.date === folga.date);
     const diaBloqueado = lista(anterior, 'blockedWeekdays').some((b: any) =>
@@ -201,12 +215,12 @@ export function validarAlteracaoDeFuncionario(
     );
     if (emAfastamento) return 'Não é possível agendar folga durante férias ou atestado.';
 
-    const conflito = folgasNovas.some((outra: any) => outra?.id !== folga.id && outra?.date === folga.date);
+    const conflito = folgasNovas.some((outra: any) => outra?.id !== folga.id && outra?.date === folga.date && folgaAtiva(outra));
     if (conflito) return 'Já existe uma folga agendada nessa data.';
   }
 
   const creditosDoColaborador = lista(anterior, 'credits').filter((c: any) => c?.employeeId === colaborador.id).length;
-  const folgasDoColaborador = folgasNovas.filter((d: any) => d?.employeeId === colaborador.id).length;
+  const folgasDoColaborador = folgasNovas.filter((d: any) => d?.employeeId === colaborador.id && folgaAtiva(d)).length;
   if (folgasDoColaborador > creditosDoColaborador) return 'Você não tem saldo suficiente para agendar essa folga.';
 
   const afastamentosAnteriores = lista(anterior, 'leaves');
