@@ -11,6 +11,8 @@ export enum ChavePreferenciaCartaz {
   PLANILHA = 'planilha',
   /** Logomarca padrão dos stories (referência ao arquivo no R2 + posição). */
   LOGO_STORY = 'logo_story',
+  /** Descrições editadas pelos usuários, por produto (chave = EAN ou nome original) — valem no Panfleto, no Tablet e no Importar planilha. */
+  DESCRICOES_PRODUTO = 'descricoes_produto',
 }
 
 /**

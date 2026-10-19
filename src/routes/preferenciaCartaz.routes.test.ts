@@ -37,6 +37,19 @@ describe('/api/cartazes/preferencias', () => {
     expect(lista.body).toEqual({ panfleto: { itensPorPagina: 9 } });
   });
 
+  it('dicionário de descrições de produto aceita mais que o teto das outras preferências', async () => {
+    const org = await criarOrganizacao();
+    const token = gerarToken(await criarAdmin(org.id));
+    // ~1.000 produtos editados (> 32 KB) — o teto das cores/tamanhos barraria isto.
+    const valor = Object.fromEntries(Array.from({ length: 1000 }, (_, i) => [`ean:789${String(i).padStart(10, '0')}`, `Creme Dental Exemplo ${i} 70g`]));
+
+    const salvo = await request(app).put('/api/cartazes/preferencias/descricoes_produto').set('Authorization', `Bearer ${token}`).send({ valor });
+    expect(salvo.status).toBe(200);
+
+    const grandeDemaisPraStory = await request(app).put('/api/cartazes/preferencias/story').set('Authorization', `Bearer ${token}`).send({ valor });
+    expect(grandeDemaisPraStory.status).toBe(422);
+  });
+
   it('isola por organização', async () => {
     const orgA = await criarOrganizacao();
     const orgB = await criarOrganizacao();

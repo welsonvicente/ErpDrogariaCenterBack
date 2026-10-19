@@ -11,7 +11,7 @@ export class PreferenciaCartazController {
 
   static async salvar(req: AuthenticatedRequest, res: Response) {
     const chave = chavePreferenciaSchema.parse(req.params.chave);
-    const { valor } = salvarPreferenciaSchema.parse(req.body);
+    const { valor } = salvarPreferenciaSchema(chave).parse(req.body);
     const salva = await PreferenciaCartazService.salvar(req.usuario!.organizacaoId, chave, valor);
     res.status(200).json(salva);
   }
