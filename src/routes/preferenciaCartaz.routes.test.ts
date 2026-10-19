@@ -50,6 +50,21 @@ describe('/api/cartazes/preferencias', () => {
     expect(grandeDemaisPraStory.status).toBe(422);
   });
 
+  it('folha A4 do Cartaz de oferta fica no servidor e vale pra qualquer login da organização', async () => {
+    const org = await criarOrganizacao();
+    const tokenAdmin = gerarToken(await criarAdmin(org.id));
+    const tokenFuncionario = gerarToken(await criarFuncionario(org.id));
+    const lote = Array.from({ length: 600 }, (_, i) => ({ produto: `FRALDA HUGGIES ${i}`, produtoOriginal: `FR HUGGIES ${i}`, preco: 41.99, precoAntigo: 54.99 }));
+    const valor = { modo: 'lote', lote, porFolhaLote: 8, pagina: 2, fundo: { nome: 'fundo.png', arquivoId: 'abc' } };
+
+    const salvo = await request(app).put('/api/cartazes/preferencias/cartaz_oferta').set('Authorization', `Bearer ${tokenFuncionario}`).send({ valor });
+    expect(salvo.status).toBe(200);
+
+    const lista = await request(app).get('/api/cartazes/preferencias').set('Authorization', `Bearer ${tokenAdmin}`);
+    expect(lista.body.cartaz_oferta.lote).toHaveLength(600);
+    expect(lista.body.cartaz_oferta.pagina).toBe(2);
+  });
+
   it('isola por organização', async () => {
     const orgA = await criarOrganizacao();
     const orgB = await criarOrganizacao();
