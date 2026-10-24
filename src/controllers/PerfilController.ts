@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { alterarSenhaSchema, atualizarPerfilSchema } from '../dtos/perfil.dto';
-import { definirPinGestorSchema } from '../dtos/usuario.dto';
+import { definirPinGestorSchema, trocarPinSchema } from '../dtos/usuario.dto';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
 import { PerfilService } from '../services/PerfilService';
 
@@ -24,6 +24,13 @@ export class PerfilController {
   }
 
   /** O próprio funcionário define o PIN que libera o Painel do Gerente — ver PerfilService.definirPinGestor. */
+  /** O próprio usuário troca o PIN do login rápido — ver PerfilService.trocarPin. */
+  static async trocarPin(req: AuthenticatedRequest, res: Response) {
+    const data = trocarPinSchema.parse(req.body);
+    await PerfilService.trocarPin(req.usuario!.id, data);
+    res.status(204).send();
+  }
+
   static async definirPinGestor(req: AuthenticatedRequest, res: Response) {
     const data = definirPinGestorSchema.parse(req.body);
     await PerfilService.definirPinGestor(req.usuario!.id, data);

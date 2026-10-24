@@ -1,7 +1,8 @@
 import bcrypt from 'bcryptjs';
 import { logger } from '../config/logger';
 import { AlterarSenhaDTO, AtualizarPerfilDTO } from '../dtos/perfil.dto';
-import { DefinirPinGestorDTO } from '../dtos/usuario.dto';
+import { PIN_MIN_DIGITOS_GESTOR } from '../constants/credenciais';
+import { DefinirPinGestorDTO, TrocarPinDTO } from '../dtos/usuario.dto';
 import { PerfilUsuario, Usuario } from '../models/Usuario';
 import { UsuarioRepository } from '../repositories/UsuarioRepository';
 import { AppError } from '../utils/AppError';
@@ -76,6 +77,41 @@ export class PerfilService {
 
     await UsuarioRepository.update(id, { pinHash: await bcrypt.hash(novoPin, SALT_ROUNDS), pinForte: true });
     logger.info('PIN de acesso ao painel definido pelo próprio usuário', { usuarioId: id });
+  }
+
+  /**
+   * O próprio usuário troca o PIN do login rápido (código + PIN) — sem a
+   * gerência ficar sabendo o PIN novo, como acontece no "Redefinir PIN".
+   * Exige o PIN atual pelo mesmo motivo de `definirPinGestor`: no balcão, o
+   * terminal pode estar com a sessão de outra pessoa aberta.
+   *
+   * Quem é ADMIN/GERENTE precisa de um PIN do tamanho de gestor (o mesmo PIN
+   * abre o painel); como foi a própria pessoa que escolheu, ele já vale pro
+   * painel (`pinForte`).
+   */
+  static async trocarPin(id: string, { pinAtual, novoPin }: TrocarPinDTO) {
+    const usuario = await this.findOrFail(id);
+    if (!usuario.pinHash) {
+      throw AppError.forbidden('Este usuário não usa login por PIN.');
+    }
+
+    const ehGestao = usuario.perfil === PerfilUsuario.ADMIN || usuario.perfil === PerfilUsuario.GERENTE;
+    if (ehGestao && novoPin.length < PIN_MIN_DIGITOS_GESTOR) {
+      throw new AppError(`Como você tem acesso de gerente, o PIN precisa ter ao menos ${PIN_MIN_DIGITOS_GESTOR} dígitos.`, 422);
+    }
+
+    const pinConfere = await bcrypt.compare(pinAtual, usuario.pinHash);
+    if (!pinConfere) {
+      logger.warn('Tentativa de troca de PIN com PIN atual incorreto', { usuarioId: id });
+      throw AppError.forbidden('PIN atual incorreto.');
+    }
+
+    if (await bcrypt.compare(novoPin, usuario.pinHash)) {
+      throw new AppError('O novo PIN precisa ser diferente do atual.', 422);
+    }
+
+    await UsuarioRepository.update(id, { pinHash: await bcrypt.hash(novoPin, SALT_ROUNDS), ...(ehGestao ? { pinForte: true } : {}) });
+    logger.info('PIN trocado pelo próprio usuário', { usuarioId: id });
   }
 
   /** Troca de senha: exige a senha atual — evita que uma sessão roubada troque a senha sem saber a original. */

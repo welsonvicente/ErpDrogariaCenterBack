@@ -17,4 +17,8 @@ router.put('/senha', authenticate, asyncHandler(PerfilController.alterarSenha));
 // quem define o PIN só porque os colegas do balcão logaram bastante no turno.
 router.put('/pin-gerente', authenticate, pinGestorRateLimiter, asyncHandler(PerfilController.definirPinGestor));
 
+// Troca do próprio PIN do login rápido (funcionário ou quem entra por PIN). Mesmo
+// limite por usuário do PIN de gerente: o corpo carrega o PIN atual.
+router.put('/pin', authenticate, pinGestorRateLimiter, asyncHandler(PerfilController.trocarPin));
+
 export default router;

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PIN_MAX_DIGITOS, PIN_MIN_DIGITOS_GESTOR } from '../constants/credenciais';
+import { PIN_MAX_DIGITOS, PIN_MIN_DIGITOS, PIN_MIN_DIGITOS_GESTOR } from '../constants/credenciais';
 import { PerfilUsuario } from '../models/Usuario';
 
 /** Cadastro de funcionário pelo gerente: nome + código + PIN de acesso. */
@@ -55,3 +55,19 @@ export const definirPinGestorSchema = z.object({
     .max(PIN_MAX_DIGITOS),
 });
 export type DefinirPinGestorDTO = z.infer<typeof definirPinGestorSchema>;
+
+/**
+ * Troca do próprio PIN pelo usuário logado (qualquer papel com login por PIN).
+ * O piso aqui é o do funcionário; quem é ADMIN/GERENTE tem o piso maior
+ * conferido no service (ver PerfilService.trocarPin).
+ */
+export const trocarPinSchema = z.object({
+  pinAtual: z.string().trim().min(1, 'PIN atual é obrigatório.'),
+  novoPin: z
+    .string()
+    .trim()
+    .regex(/^\d+$/, 'PIN deve conter apenas números.')
+    .min(PIN_MIN_DIGITOS, `O PIN precisa ter ao menos ${PIN_MIN_DIGITOS} dígitos.`)
+    .max(PIN_MAX_DIGITOS, `O PIN pode ter no máximo ${PIN_MAX_DIGITOS} dígitos.`),
+});
+export type TrocarPinDTO = z.infer<typeof trocarPinSchema>;
