@@ -5,7 +5,7 @@ import { ChavePreferenciaCartaz } from '../models/PreferenciaCartaz';
 const TAMANHO_MAXIMO_BYTES = 32 * 1024;
 /** O dicionário de descrições cresce com o catálogo (uma linha por produto editado) — ~3 mil produtos cabem aqui; o lote do Cartaz de oferta, idem. */
 const TAMANHO_MAXIMO_LISTAS_BYTES = 512 * 1024;
-const CHAVES_COM_LISTA = new Set([ChavePreferenciaCartaz.DESCRICOES_PRODUTO, ChavePreferenciaCartaz.CARTAZ_OFERTA]);
+const CHAVES_COM_LISTA = new Set([ChavePreferenciaCartaz.DESCRICOES_PRODUTO, ChavePreferenciaCartaz.CARTAZ_OFERTA, ChavePreferenciaCartaz.RECORTES_PRODUTO]);
 
 export const chavePreferenciaSchema = z.nativeEnum(ChavePreferenciaCartaz, {
   errorMap: () => ({ message: 'Preferência inválida.' }),

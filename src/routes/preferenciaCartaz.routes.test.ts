@@ -50,6 +50,20 @@ describe('/api/cartazes/preferencias', () => {
     expect(grandeDemaisPraStory.status).toBe(422);
   });
 
+  it('biblioteca de recortes de produto aceita catálogo grande e vale pra qualquer login da organização', async () => {
+    const org = await criarOrganizacao();
+    const tokenAdmin = gerarToken(await criarAdmin(org.id));
+    const tokenFuncionario = gerarToken(await criarFuncionario(org.id));
+    // ~1.000 produtos recortados (> 32 KB).
+    const valor = Object.fromEntries(Array.from({ length: 1000 }, (_, i) => [`ean:789${String(i).padStart(10, '0')}`, { arquivoId: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, em: '2026-10-29T12:00:00.000Z' }]));
+
+    const salvo = await request(app).put('/api/cartazes/preferencias/recortes_produto').set('Authorization', `Bearer ${tokenFuncionario}`).send({ valor });
+    expect(salvo.status).toBe(200);
+
+    const lista = await request(app).get('/api/cartazes/preferencias').set('Authorization', `Bearer ${tokenAdmin}`);
+    expect(Object.keys(lista.body.recortes_produto)).toHaveLength(1000);
+  });
+
   it('folha A4 do Cartaz de oferta fica no servidor e vale pra qualquer login da organização', async () => {
     const org = await criarOrganizacao();
     const tokenAdmin = gerarToken(await criarAdmin(org.id));

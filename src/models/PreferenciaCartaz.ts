@@ -15,6 +15,8 @@ export enum ChavePreferenciaCartaz {
   DESCRICOES_PRODUTO = 'descricoes_produto',
   /** Folha A4 do Cartaz de oferta (dados, lote, quantidades, página e referência do fundo no R2) — a mesma em qualquer aparelho da organização. */
   CARTAZ_OFERTA = 'cartaz_oferta',
+  /** Biblioteca de recortes (produto sem fundo), por produto (chave = EAN ou nome original) → arquivo PNG no R2 — reaproveitado quando o produto entra de novo. */
+  RECORTES_PRODUTO = 'recortes_produto',
 }
 
 /**
