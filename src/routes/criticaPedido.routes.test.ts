@@ -160,6 +160,30 @@ describe('/api/criticas-pedido', () => {
     expect((await put({ anotacoes: { xyz: { motivo: null, texto: 'chave inválida' } } })).status).toBe(422);
   });
 
+  it('PDF com vários pedidos: guarda a distribuidora de cada item e o resumo por pedido', async () => {
+    const { token } = await contexto();
+    const base = corpo();
+    const pedido = {
+      ...base.pedido,
+      distribuidora: 'Várias (2): Dist A, Dist B',
+      numero: 'PED-A +1',
+      itens: [
+        { id: 1, ean: null, produto: 'PRODUTO UM 10MG', qtd: 1, unitario: 2, subtotal: 2, distribuidora: 'Dist A', pedidoNumero: 'PED-A' },
+        { id: 2, ean: null, produto: 'PRODUTO DOIS 5MG', qtd: 1, unitario: 3, subtotal: 3, distribuidora: 'Dist B', pedidoNumero: 'PED-B' },
+      ],
+      pedidos: [
+        { numero: 'PED-A', distribuidora: 'Dist A', representante: 'Fulano', totalDeclarado: 2, minimoDistribuidora: null, itens: 1 },
+        { numero: 'PED-B', distribuidora: 'Dist B', representante: null, totalDeclarado: 3, minimoDistribuidora: 10, itens: 1 },
+      ],
+    };
+    const salvo = await post(token, { ...base, pedido });
+    expect(salvo.status).toBe(201);
+    const aberto = await request(app).get(`/api/criticas-pedido/${salvo.body.id}`).set('Authorization', `Bearer ${token}`);
+    expect(aberto.body.pedido.itens.map((i: { distribuidora: string; pedidoNumero: string }) => [i.distribuidora, i.pedidoNumero])).toEqual([['Dist A', 'PED-A'], ['Dist B', 'PED-B']]);
+    expect(aberto.body.pedido.pedidos).toEqual(pedido.pedidos);
+    expect(aberto.body.distribuidora).toBe('Várias (2): Dist A, Dist B');
+  });
+
   it('exclui a crítica', async () => {
     const { token } = await contexto();
     const salvo = await post(token, corpo());

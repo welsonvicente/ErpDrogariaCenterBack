@@ -7,6 +7,8 @@ export const idCriticaSchema = z.string().uuid('Id inválido.');
 export const LIMITE_PDF_BYTES = 3 * 1024 * 1024;
 
 const texto = (max: number) => z.string().trim().max(max).nullish().transform((v) => v || null);
+/** Campo que só existe em alguns documentos: ausente fica ausente (não vira null no que é guardado). */
+const textoSeExistir = (max: number) => z.string().trim().max(max).nullish().transform((v) => v || undefined);
 const num = z.number().finite();
 const numOuNulo = z.number().finite().nullish().transform((v) => v ?? null);
 
@@ -17,6 +19,19 @@ const itemCota = z.object({
   qtd: num,
   unitario: num,
   subtotal: num,
+  /** Só quando o PDF juntou pedidos de várias distribuidoras. */
+  distribuidora: textoSeExistir(200),
+  pedidoNumero: textoSeExistir(80),
+});
+
+/** Um dos pedidos de um PDF que junta vários (um por distribuidora). */
+const pedidoDaDistribuidora = z.object({
+  numero: texto(80),
+  distribuidora: z.string().trim().min(1).max(200),
+  representante: texto(300),
+  totalDeclarado: numOuNulo,
+  minimoDistribuidora: numOuNulo,
+  itens: z.number().int().min(0),
 });
 
 const itemTrier = z.object({
@@ -45,6 +60,7 @@ const pedidoSchema = z.object({
   minimoDistribuidora: numOuNulo,
   geradoEm: texto(80),
   itens: z.array(itemCota).min(1).max(3000),
+  pedidos: z.array(pedidoDaDistribuidora).max(100).optional(),
 });
 
 const relatorioSchema = z.object({
