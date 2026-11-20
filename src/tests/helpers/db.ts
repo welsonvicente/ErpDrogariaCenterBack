@@ -21,6 +21,7 @@ export async function resetDb() {
       estoque_importacoes,
       estoque_historico,
       estoque_config,
+      criticas_pedido,
       organizacoes
     RESTART IDENTITY CASCADE
   `);

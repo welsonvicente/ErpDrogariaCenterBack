@@ -5,6 +5,7 @@ import { ArmazenamentoApp } from '../models/ArmazenamentoApp';
 import { ArquivoCartaz } from '../models/ArquivoCartaz';
 import { ArquivoImportado } from '../models/ArquivoImportado';
 import { Categoria } from '../models/Categoria';
+import { CriticaPedido } from '../models/CriticaPedido';
 import { Despesa } from '../models/Despesa';
 import { EstoqueConfig } from '../models/EstoqueConfig';
 import { EstoqueHistorico } from '../models/EstoqueHistorico';
@@ -37,6 +38,6 @@ export const AppDataSource = new DataSource({
   // silenciar aqui, a saída dos testes fica cheia de "erros" que na
   // verdade são o comportamento correto sendo testado.
   logging: isTest ? false : isProduction ? ['error', 'warn'] : ['error', 'warn', 'schema'],
-  entities: [Organizacao, Usuario, Categoria, Despesa, ArmazenamentoApp, RegistroAuditoria, ArquivoImportado, ProjetoCartaz, ArquivoCartaz, PreferenciaCartaz, EstoqueProduto, EstoqueImportacao, EstoqueHistorico, EstoqueConfig],
+  entities: [Organizacao, Usuario, Categoria, Despesa, ArmazenamentoApp, RegistroAuditoria, ArquivoImportado, ProjetoCartaz, ArquivoCartaz, PreferenciaCartaz, EstoqueProduto, EstoqueImportacao, EstoqueHistorico, EstoqueConfig, CriticaPedido],
   migrations: [__dirname + '/../migrations/*.{ts,js}'],
 });
