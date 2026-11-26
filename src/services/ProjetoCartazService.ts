@@ -1,17 +1,20 @@
 import { apagarObjetos, chaveObjeto } from '../config/r2Client';
 import { TipoProjetoCartaz } from '../models/ProjetoCartaz';
 import { ArquivoCartazRepository } from '../repositories/ArquivoCartazRepository';
+import { CampanhaCartazRepository } from '../repositories/CampanhaCartazRepository';
 import { ProjetoCartazRepository } from '../repositories/ProjetoCartazRepository';
 import { AppError } from '../utils/AppError';
 import { ArquivoCartazService } from './ArquivoCartazService';
 
 export class ProjetoCartazService {
-  static criar(organizacaoId: string, usuarioId: string, tipo: TipoProjetoCartaz, nome: string) {
-    return ProjetoCartazRepository.criar({ organizacaoId, criadoPorId: usuarioId, tipo, nome });
+  static async criar(organizacaoId: string, usuarioId: string, tipo: TipoProjetoCartaz, nome: string, campanhaId?: string) {
+    // Campanha de outra organização (ou apagada) não pode receber o projeto.
+    if (campanhaId && !(await CampanhaCartazRepository.existe(campanhaId, organizacaoId))) throw AppError.notFound('Campanha', campanhaId);
+    return ProjetoCartazRepository.criar({ organizacaoId, criadoPorId: usuarioId, tipo, nome, campanhaId: campanhaId ?? null });
   }
 
-  static listar(organizacaoId: string, tipo?: TipoProjetoCartaz) {
-    return ProjetoCartazRepository.listarPorOrganizacao(organizacaoId, tipo);
+  static listar(organizacaoId: string, tipo?: TipoProjetoCartaz, campanhaId?: string) {
+    return ProjetoCartazRepository.listarPorOrganizacao(organizacaoId, tipo, campanhaId);
   }
 
   /** Projeto + arquivos confirmados já com URL de leitura assinada — pronto pro front recarregar o editor. */

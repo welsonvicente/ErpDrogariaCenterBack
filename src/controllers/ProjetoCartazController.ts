@@ -5,14 +5,14 @@ import { ProjetoCartazService } from '../services/ProjetoCartazService';
 
 export class ProjetoCartazController {
   static async criar(req: AuthenticatedRequest, res: Response) {
-    const { tipo, nome } = criarProjetoSchema.parse(req.body);
-    const projeto = await ProjetoCartazService.criar(req.usuario!.organizacaoId, req.usuario!.id, tipo, nome);
+    const { tipo, nome, campanhaId } = criarProjetoSchema.parse(req.body);
+    const projeto = await ProjetoCartazService.criar(req.usuario!.organizacaoId, req.usuario!.id, tipo, nome, campanhaId);
     res.status(201).json(projeto);
   }
 
   static async listar(req: AuthenticatedRequest, res: Response) {
-    const { tipo } = listarProjetosQuerySchema.parse(req.query);
-    const projetos = await ProjetoCartazService.listar(req.usuario!.organizacaoId, tipo);
+    const { tipo, campanhaId } = listarProjetosQuerySchema.parse(req.query);
+    const projetos = await ProjetoCartazService.listar(req.usuario!.organizacaoId, tipo, campanhaId);
     res.status(200).json(projetos);
   }
 

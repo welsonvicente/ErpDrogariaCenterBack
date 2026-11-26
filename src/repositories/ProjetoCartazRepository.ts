@@ -6,17 +6,18 @@ export class ProjetoCartazRepository {
     return AppDataSource.getRepository(ProjetoCartaz);
   }
 
-  static criar(dados: { organizacaoId: string; criadoPorId: string | null; tipo: TipoProjetoCartaz; nome: string }) {
+  static criar(dados: { organizacaoId: string; criadoPorId: string | null; tipo: TipoProjetoCartaz; nome: string; campanhaId: string | null }) {
     return this.repo.save(this.repo.create({ ...dados, estadoEditor: {} }));
   }
 
   /** Lista sem `estadoEditor` (pode ser um JSON grande) — só o necessário pra mostrar a lista de projetos. */
-  static listarPorOrganizacao(organizacaoId: string, tipo?: TipoProjetoCartaz) {
+  static listarPorOrganizacao(organizacaoId: string, tipo?: TipoProjetoCartaz, campanhaId?: string) {
     return this.repo.find({
-      where: { organizacaoId, ...(tipo ? { tipo } : {}) },
+      where: { organizacaoId, ...(tipo ? { tipo } : {}), ...(campanhaId ? { campanhaId } : {}) },
       relations: { criadoPor: true },
       select: {
         id: true,
+        campanhaId: true,
         tipo: true,
         nome: true,
         criadoPorId: true,
@@ -35,6 +36,7 @@ export class ProjetoCartazRepository {
       relations: { criadoPor: true },
       select: {
         id: true,
+        campanhaId: true,
         tipo: true,
         nome: true,
         estadoEditor: true,

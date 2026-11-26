@@ -7,11 +7,14 @@ export const projetoIdSchema = z.string().uuid('Id de projeto inválido.');
 export const criarProjetoSchema = z.object({
   tipo: z.nativeEnum(TipoProjetoCartaz, { errorMap: () => ({ message: 'Tipo de projeto inválido.' }) }),
   nome: z.string().trim().min(1, 'Nome do projeto é obrigatório.').max(120),
+  /** Campanha (ver CampanhaCartaz) — o front sempre manda; ausente só em cliente antigo. */
+  campanhaId: z.string().uuid('Id de campanha inválido.').optional(),
 });
 export type CriarProjetoDTO = z.infer<typeof criarProjetoSchema>;
 
 export const listarProjetosQuerySchema = z.object({
   tipo: z.nativeEnum(TipoProjetoCartaz, { errorMap: () => ({ message: 'Tipo de projeto inválido.' }) }).optional(),
+  campanhaId: z.string().uuid('Id de campanha inválido.').optional(),
 });
 export type ListarProjetosQueryDTO = z.infer<typeof listarProjetosQuerySchema>;
 

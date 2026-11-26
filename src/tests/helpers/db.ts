@@ -16,6 +16,7 @@ export async function resetDb() {
       arquivos_importados,
       arquivos_cartaz,
       projetos_cartaz,
+      campanhas_cartaz,
       preferencias_cartaz,
       estoque_produtos,
       estoque_importacoes,

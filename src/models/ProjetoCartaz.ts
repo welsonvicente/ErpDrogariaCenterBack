@@ -1,4 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { CampanhaCartaz } from './CampanhaCartaz';
 import { Organizacao } from './Organizacao';
 import { Usuario } from './Usuario';
 
@@ -47,6 +48,15 @@ export class ProjetoCartaz {
 
   @Column({ name: 'criado_por_id', nullable: true })
   criadoPorId!: string | null;
+
+  /** Campanha a que o projeto pertence (ver CampanhaCartaz) — null só em projeto antigo/solto. */
+  @ManyToOne(() => CampanhaCartaz, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'campanha_id' })
+  campanha!: CampanhaCartaz | null;
+
+  @Index('IDX_projetos_cartaz_campanha')
+  @Column({ name: 'campanha_id', type: 'uuid', nullable: true })
+  campanhaId!: string | null;
 
   @Column({ type: 'enum', enum: TipoProjetoCartaz })
   tipo!: TipoProjetoCartaz;

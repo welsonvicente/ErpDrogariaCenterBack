@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ArquivoCartazController } from '../controllers/ArquivoCartazController';
 import { ArquivoImportadoController } from '../controllers/ArquivoImportadoController';
+import { CampanhaCartazController } from '../controllers/CampanhaCartazController';
 import { CartazController } from '../controllers/CartazController';
 import { PreferenciaCartazController } from '../controllers/PreferenciaCartazController';
 import { ProjetoCartazController } from '../controllers/ProjetoCartazController';
@@ -26,6 +27,14 @@ router.delete('/arquivos/:id', authenticate, asyncHandler(ArquivoImportadoContro
 // resto de Cartazes: qualquer login válido na organização acessa os projetos
 // dela (ver ProjetoCartazRepository/ArquivoCartazRepository, sempre
 // filtrados por organizacaoId).
+// Campanhas (ex.: "Black Friday — semana 1") — agrupam os projetos dos 3 modos e a folha do
+// Cartaz de oferta; várias podem estar em andamento ao mesmo tempo. Mesma regra de acesso dos projetos.
+router.post('/campanhas', authenticate, asyncHandler(CampanhaCartazController.criar));
+router.get('/campanhas', authenticate, asyncHandler(CampanhaCartazController.listar));
+router.get('/campanhas/:id', authenticate, asyncHandler(CampanhaCartazController.obter));
+router.patch('/campanhas/:id', authenticate, asyncHandler(CampanhaCartazController.atualizar));
+router.delete('/campanhas/:id', authenticate, asyncHandler(CampanhaCartazController.remover));
+
 router.post('/projetos', authenticate, asyncHandler(ProjetoCartazController.criar));
 router.get('/projetos', authenticate, asyncHandler(ProjetoCartazController.listar));
 router.get('/projetos/:id', authenticate, asyncHandler(ProjetoCartazController.obter));
