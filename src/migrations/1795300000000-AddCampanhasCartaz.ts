@@ -22,10 +22,10 @@ export class AddCampanhasCartaz1795300000000 implements MigrationInterface {
         await queryRunner.query(`
             INSERT INTO "campanhas_cartaz" ("organizacao_id", "nome", "folha_oferta")
             SELECT o."id", 'Campanha atual',
-                   COALESCE((SELECT p."valor" FROM "preferencias_cartaz" p WHERE p."organizacao_id" = o."id" AND p."chave" = 'cartaz_oferta'), '{}'::jsonb)
+                   COALESCE((SELECT p."valor" FROM "preferencias_cartaz" p WHERE p."organizacao_id" = o."id" AND p."chave"::text = 'cartaz_oferta'), '{}'::jsonb)
             FROM "organizacoes" o
             WHERE EXISTS (SELECT 1 FROM "projetos_cartaz" pc WHERE pc."organizacao_id" = o."id")
-               OR EXISTS (SELECT 1 FROM "preferencias_cartaz" p WHERE p."organizacao_id" = o."id" AND p."chave" = 'cartaz_oferta')`);
+               OR EXISTS (SELECT 1 FROM "preferencias_cartaz" p WHERE p."organizacao_id" = o."id" AND p."chave"::text = 'cartaz_oferta')`);
         await queryRunner.query(`
             UPDATE "projetos_cartaz" pc SET "campanha_id" = c."id"
             FROM "campanhas_cartaz" c

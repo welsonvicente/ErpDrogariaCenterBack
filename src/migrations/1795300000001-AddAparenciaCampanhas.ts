@@ -15,7 +15,7 @@ export class AddAparenciaCampanhas1795300000001 implements MigrationInterface {
                 SELECT jsonb_object_agg(p."chave"::text, p."valor")
                 FROM "preferencias_cartaz" p
                 WHERE p."organizacao_id" = c."organizacao_id"
-                  AND p."chave" IN ('story', 'panfleto', 'planilha', 'logo_story')
+                  AND p."chave"::text IN ('story', 'panfleto', 'planilha', 'logo_story')
             ), '{}'::jsonb)`);
     }
 
