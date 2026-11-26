@@ -253,6 +253,21 @@ describe('/api/estoque', () => {
     expect(invalida.status).toBe(422);
   });
 
+  it('guarda o período de entradas desconsideradas (fim aberto = até hoje) e rejeita período invertido', async () => {
+    const { token } = await contexto();
+    const base = (await painel(token)).body.config;
+
+    const comPeriodo = await request(app).put('/api/estoque/config').set('Authorization', `Bearer ${token}`).send({ ...base, desconsiderarEntradas: { de: '2026-10-01', ate: null } });
+    expect(comPeriodo.status).toBe(200);
+    expect((await painel(token)).body.config.desconsiderarEntradas).toEqual({ de: '2026-10-01', ate: null });
+
+    const vazio = await request(app).put('/api/estoque/config').set('Authorization', `Bearer ${token}`).send({ ...base, desconsiderarEntradas: { de: null, ate: null } });
+    expect(vazio.body.desconsiderarEntradas).toBeNull();
+
+    const invertido = await request(app).put('/api/estoque/config').set('Authorization', `Bearer ${token}`).send({ ...base, desconsiderarEntradas: { de: '2026-11-30', ate: '2026-10-01' } });
+    expect(invertido.status).toBe(422);
+  });
+
   it('valida a importação: sem produtos, sem código, data inválida', async () => {
     const { token } = await contexto();
     expect((await importar(token, [])).status).toBe(422);

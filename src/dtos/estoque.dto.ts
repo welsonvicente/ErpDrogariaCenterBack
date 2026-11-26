@@ -136,6 +136,12 @@ export const configEstoqueSchema = z
       .record(z.string().trim().min(1).max(40), z.string().trim().min(1).max(80))
       .default({})
       .refine((r) => Object.keys(r).length <= 1000, 'Nomes de grupo demais.'),
+    desconsiderarEntradas: z
+      .object({ de: dataIso.nullable(), ate: dataIso.nullable() })
+      .nullable()
+      .optional()
+      // Ausente = não mexe (config antiga); enviado vazio = considera tudo de novo.
+      .transform((v) => (v === undefined ? undefined : v && (v.de || v.ate) ? v : null)),
   })
   .superRefine((c, ctx) => {
     const { p1Min, p2Min, p3Min, p4Min } = c.faixas;
@@ -144,6 +150,10 @@ export const configEstoqueSchema = z
     }
     if (c.diasCritico < c.diasAlerta) {
       ctx.addIssue({ code: 'custom', path: ['diasCritico'], message: 'O prazo crítico não pode ser menor que o de alerta.' });
+    }
+    const periodo = c.desconsiderarEntradas;
+    if (periodo?.de && periodo.ate && periodo.de > periodo.ate) {
+      ctx.addIssue({ code: 'custom', path: ['desconsiderarEntradas'], message: 'A data inicial do período desconsiderado não pode ser depois da final.' });
     }
     if (c.pesos.quantidade + c.pesos.valor + c.pesos.tempo <= 0) {
       ctx.addIssue({ code: 'custom', path: ['pesos'], message: 'Pelo menos um peso do ranking precisa ser maior que zero.' });

@@ -16,6 +16,11 @@ export interface ConfigEstoque {
   pesos: { quantidade: number; valor: number; tempo: number };
   /** O Trier exporta o grupo só como código ("30"). Aqui a gestão dá nome a cada código ("Suplementos"). */
   nomesGrupos: Record<string, string>;
+  /**
+   * Produtos cuja ÚLTIMA ENTRADA caiu neste período ficam fora das análises (ex.: o que chegou em
+   * outubro e novembro ainda não é "parado"). `ate` null = até hoje; null/ausente = considera tudo.
+   */
+  desconsiderarEntradas?: { de: string | null; ate: string | null } | null;
 }
 
 /** Uma linha por organização. O formato do JSON é validado no dto; o banco só guarda. */
